@@ -44,16 +44,6 @@ function drawBoardBackground() {
 	context.fillStyle = "#E2C58B"
 	context.fillRect(0, 0, minSide, minSide);
 
-	var gradient = context.createLinearGradient(0, 0, minSide, 0);
-	gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
-	gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
-	gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.05)");
-	gradient.addColorStop(0.60, "rgba(255, 255, 255, 0.01)");
-	gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
-	context.fillStyle = gradient;
-	context.fillRect(0, 0, minSide, minSide);
-
-
 	context.strokeStyle = "rgba(180, 139, 89, 0.4)";
 	context.lineWidth = 2;
 	context.shadowColor = "rgba(180, 139, 89, 0.9)";
@@ -66,10 +56,23 @@ function drawBoardBackground() {
 		context.lineTo(x[1], minSide);
 	}	
 	context.stroke();
+
+	drawBoardLines();
+
+	var gradient = context.createLinearGradient(0, 0, minSide, 0);
+	gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
+	gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
+	gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.09)");
+	gradient.addColorStop(0.70, "rgba(255, 255, 255, 0.01)");
+	gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, minSide, minSide);
+
 	context.restore();
 }
 function drawBoardLines() {
 	context.save();
+	context.globalAlpha = 0.8;
 	context.lineWidth = 4;
 	context.strokeStyle = "#333333";
 	context.shadowColor = "rgba(10, 10, 10, 0.3)";
@@ -138,7 +141,6 @@ function drawBoardStones() {
 }
 function drawBoard() {
 	drawBoardBackground();
-	drawBoardLines();
 	drawBoardStones();
 }
 
