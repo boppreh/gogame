@@ -35,9 +35,16 @@ var cellSize = (minSide - 2 * padding) / size;
 
 var animations = [];
 
-var backgroundCanvas = document.createElement("canvas");
-backgroundCanvas.width = minSide;
-backgroundCanvas.height = minSide;
+var cachedBackgroundCanvas = document.createElement("canvas");
+cachedBackgroundCanvas.width = minSide;
+cachedBackgroundCanvas.height = minSide;
+var cachedBlackStoneCanvas = document.createElement("canvas");
+cachedBlackStoneCanvas.width = cellSize;
+cachedBlackStoneCanvas.height = cellSize;
+var cachedWhiteStoneCanvas = document.createElement("canvas");
+cachedWhiteStoneCanvas.width = cellSize;
+cachedWhiteStoneCanvas.height = cellSize;
+
 var stonesCanvas = document.createElement("canvas");
 stonesCanvas.width = minSide;
 stonesCanvas.height = minSide;
@@ -76,8 +83,6 @@ function drawBoardBackground(context) {
 
 	context.restore();
 }
-drawBoardBackground(backgroundCanvas.getContext("2d"));
-
 function drawBoardLines(context) {
 	context.save();
 	context.globalAlpha = 0.8;
@@ -99,14 +104,9 @@ function drawBoardLines(context) {
 	context.stroke();
 	context.restore();
 }
-function drawOneStone(context, row, col, x, y) {
-	var stone = board[row][col];
-	if (stone == EMPTY) {
-		return;
-	}
-
+function drawRawStone(context, stone) {
 	context.save();
-	context.translate(x, y);
+	context.translate(cellSize / 2, cellSize / 2);
 	context.scale(stoneSizeRatio, stoneSizeRatio);
 
 	context.lineWidth = 1;
@@ -131,19 +131,15 @@ function drawOneStone(context, row, col, x, y) {
 	context.arc(0, 0, cellSize, 0, Math.PI*2);
 	context.stroke();
 	context.fill();
-
-	// Attempt at specular light.
-	/*
-	context.fillStyle = "rgba(255, 255, 255, 0.05)";
-	context.shadowColor = "rgba(255, 255, 255, 1)";
-	context.shadowBlur = 5;
-	context.shadowOffsetX = 3;
-	context.shadowOffsetY = 3;
-	context.beginPath();
-	context.arc(x - cellSize * stoneSizeRatio * 0.35, y - cellSize  * stoneSizeRatio * 0.35, cellSize * stoneSizeRatio * 0.3, 0, Math.PI*2);
-	context.fill();
-	*/
 	context.restore();
+}
+
+function drawOneStone(context, stone, x, y) {
+	if (stone == EMPTY) {
+		return;
+	}
+	var cachedCanvas = stone == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+	context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
 }
 function drawBoardStones(context) {
 	context.save();
@@ -154,20 +150,28 @@ function drawBoardStones(context) {
 			var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
 			var x = padding + cellSize/2 + col * cellSize + wiggleX;
 			var y = padding + cellSize/2 + row * cellSize + wiggleY;
-			drawOneStone(context, row, col, x, y);
+			drawOneStone(context, board[row][col], x, y);
 		}
 	}
 	context.restore();
 }
+
+drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 0, 0);
+drawRawStone(cachedBlackStoneCanvas.getContext("2d"), BLACK, 0, 0);
+drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
+
 function drawBoard() {
-	context.drawImage(backgroundCanvas, 0, 0);
+	context.drawImage(cachedBackgroundCanvas, 0, 0);
 	context.drawImage(stonesCanvas, 0, 0);
 }
 
 function update() {
 	drawBoard();
 	for (var i = animations.length - 1; i >= 0; i--) {
-		if (!animations[i]()) {
+		context.save();
+		var shouldContinue = animations[i]();
+		context.restore();
+		if (!shouldContinue) {
 			animations.splice(i, 1);
 		}
 	}
@@ -279,6 +283,17 @@ function calculateGroups() {
 }
 
 canvas.onclick = onClick;
+animations.push(function() {
+	var step = 0;
+	return function() {
+		step += 0.01;
+		context.globalAlpha = step;
+		context.translate(100, 100);
+		context.scale(2 * step, 2 * step);
+		drawOneStone(context, BLACK, 0, 0);
+		return step <= 1;
+	}
+}());
 		</script>
 	</body>
 </html>
