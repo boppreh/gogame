@@ -30,23 +30,45 @@ var context = canvas.getContext("2d");
 var minSide = Math.min(canvas.width, canvas.height);
 var padding = 10;
 var cellSize = (minSide - 2 * padding) / size;
-function drawBoard() {
+function drawBoardBackground() {
 	context.save();
-	context.fillStyle = "#FFFFFF";
+	context.fillStyle = "#E2C58B";
 	context.fillRect(0, 0, minSide, minSide);
 
-	context.lineWidth = 3;
+	context.strokeStyle = "rgba(180, 139, 89, 0.4)";
+	context.lineWidth = 2;
+	context.shadowColor = "rgba(180, 139, 89, 0.9)";
+	context.shadowBlur = 3;
+	context.shadowOffsetX = -3;
+	context.shadowOffsetY = 0;
+	context.beginPath();
+	for (var x = 0; x < minSide; ) {
+		x += Math.random() * minSide / 10;
+		context.moveTo(x, 0);
+		context.lineTo(x + (Math.random() - 1 + 0.5) * 1 * minSide / 30, minSide);
+	}
+	context.stroke();
+	context.restore();
+}
+function drawBoardLines() {
+	context.save();
+	context.lineWidth = 4;
 	context.strokeStyle = "#333333";
+	context.shadowColor = "rgba(10, 10, 10, 0.3)";
+	context.shadowBlur = 1;
+	context.shadowOffsetX = 1;
+	context.shadowOffsetY = 1;
+	context.beginPath();
 	for (var i = padding + cellSize/2; i <= minSide - padding - cellSize/2; i += cellSize) {
-		context.beginPath();
 		context.moveTo(padding + cellSize/2, i);
 		context.lineTo(minSide - padding - cellSize/2, i);
 		context.moveTo(i, padding + cellSize/2);
 		context.lineTo(i, minSide - padding - cellSize/2);
-		context.stroke();
 	}
+	context.stroke();
 	context.restore();
-
+}
+function drawBoardStones() {
 	context.save();
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
@@ -56,14 +78,14 @@ function drawBoard() {
 			}
 
 			context.lineWidth = 1;
-			context.shadowColor = "#999";
+			context.shadowColor = "rgba(30, 30, 30, 0.5)";
 			context.shadowBlur = 5;
 			context.shadowOffsetX = 4;
 			context.shadowOffsetY = 4;
 
 			var x = padding + cellSize/2 + col * cellSize;
 			var y = padding + cellSize/2 + row * cellSize;
-			context.beginPath();
+
 			var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
 			if (stone == WHITE) {
 				context.strokeStyle = "#DDDDDD";
@@ -74,14 +96,32 @@ function drawBoard() {
 				gradient.addColorStop(0, "#222222");
 				gradient.addColorStop(1, "#333333");
 			}
-			
 			context.fillStyle = gradient;
+
+			context.beginPath();
 			context.arc(x, y, cellSize * stoneSizeRatio, 0, Math.PI*2);
 			context.stroke();
 			context.fill();
+
+			// Attempt at specular light.
+			/*
+			context.fillStyle = "rgba(255, 255, 255, 0.05)";
+			context.shadowColor = "rgba(255, 255, 255, 1)";
+			context.shadowBlur = 5;
+			context.shadowOffsetX = 3;
+			context.shadowOffsetY = 3;
+			context.beginPath();
+			context.arc(x - cellSize * stoneSizeRatio * 0.35, y - cellSize  * stoneSizeRatio * 0.35, cellSize * stoneSizeRatio * 0.3, 0, Math.PI*2);
+			context.fill();
+			*/
 		}
 	}
 	context.restore();
+}
+function drawBoard() {
+	drawBoardBackground();
+	drawBoardLines();
+	drawBoardStones();
 }
 
 function onClick(event) {
