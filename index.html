@@ -146,14 +146,18 @@ function drawBoardStones(context) {
 	context.clearRect(0, 0, minSide, minSide);
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
-			var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
-			var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
-			var x = padding + cellSize/2 + col * cellSize + wiggleX;
-			var y = padding + cellSize/2 + row * cellSize + wiggleY;
-			drawOneStone(context, board[row][col], x, y);
+			var pos = translateRowCol(row, col);
+			drawOneStone(context, board[row][col], pos.x, pos.y);
 		}
 	}
 	context.restore();
+}
+function translateRowCol(row, col) {
+	var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
+	var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
+	var x = padding + cellSize/2 + col * cellSize + wiggleX;
+	var y = padding + cellSize/2 + row * cellSize + wiggleY;
+	return {x: x, y: y};
 }
 
 drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 0, 0);
@@ -184,40 +188,41 @@ function onClick(event) {
 	var mouseY = event.pageY - canvas.offsetTop;
 	var col = Math.round((mouseX - padding - cellSize/2) / cellSize);
 	var row = Math.round((mouseY - padding - cellSize/2) / cellSize);
-	playAt(row, col);
-}
-
-function playAt(row, col) {
 	if (getStone(row, col) != EMPTY) {
 		return;	
 	}
 	board[row][col] = turn;
-	if (sweepBoard()) {
-		turn = turn === BLACK ? WHITE : BLACK;
-	} else {
-		board[row][col] = EMPTY;
-	}
-	drawBoardStones(stonesCanvas.getContext("2d"));
+	animatePlay(turn, row, col);
+	turn = turn === BLACK ? WHITE : BLACK;
+}
+
+function animatePlay(stone, row, col) {
+	var step = 0;
+	var pos = translateRowCol(row, col);
+	var direction = stone == WHITE ? -1 : 1;
+	animations.push(function() {
+		step += 0.1;
+		context.globalAlpha = step;
+		context.translate(pos.x, pos.y + (1 - step) * cellSize * direction);
+		context.scale(2 - step, 2 - step);
+		drawOneStone(context, stone, 0, 0);
+		if (step <= 1) {
+			return true;
+		} else {
+			drawBoardStones(stonesCanvas.getContext("2d"));
+			return false;
+		}
+	});
 }
 
 function sweepBoard() {
 	var groups = calculateGroups();
-	// Suicide prevention is buggy for the moment.
-	/*
-	for (var pos in groups) {
-		var group = groups[pos];
-		if (group.nLiberties === 0 && group.stones[0] === turn) {
-			return false;
-		}
-	}
-	*/
 	for (var pos in groups) {
 		var group = groups[pos];
 		if (group.nLiberties === 0) {
 			removeGroup(group);
 		}		
 	}
-	return true;
 }
 
 function removeGroup(group) {
@@ -283,17 +288,7 @@ function calculateGroups() {
 }
 
 canvas.onclick = onClick;
-animations.push(function() {
-	var step = 0;
-	return function() {
-		step += 0.01;
-		context.globalAlpha = step;
-		context.translate(100, 100);
-		context.scale(2 * step, 2 * step);
-		drawOneStone(context, BLACK, 0, 0);
-		return step <= 1;
-	}
-}());
+animations.push();
 		</script>
 	</body>
 </html>
