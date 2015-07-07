@@ -10,320 +10,340 @@
 
 		<script>
 "use strict";
-var EMPTY = "empty";
-var BLACK = "black";
-var WHITE = "white";
-var NOTHING = "nothing";
 
-var size = 5;
-var board = [];
-var turn = BLACK;
+function Game(size, canvas) {
+	size = size || 5;
 
-var stoneSizeRatio = 0.8 / 2;
-var canvas = document.getElementById("go-board");
-var context = canvas.getContext("2d");
-var minSide = Math.min(canvas.width, canvas.height);
-var padding = 10;
-var cellSize = (minSide - 2 * padding) / size;
+	var EMPTY = "empty";
+	var BLACK = "black";
+	var WHITE = "white";
+	var NOTHING = "nothing";
 
-var animations = [];
+	var size = 5;
+	var board = [];
+	var turn = BLACK;
 
-var cachedBackgroundCanvas = document.createElement("canvas");
-cachedBackgroundCanvas.width = minSide;
-cachedBackgroundCanvas.height = minSide;
-var cachedBlackStoneCanvas = document.createElement("canvas");
-cachedBlackStoneCanvas.width = cellSize;
-cachedBlackStoneCanvas.height = cellSize;
-var cachedWhiteStoneCanvas = document.createElement("canvas");
-cachedWhiteStoneCanvas.width = cellSize;
-cachedWhiteStoneCanvas.height = cellSize;
+	var stoneSizeRatio = 0.8 / 2;
+	var context = canvas.getContext("2d");
+	var minSide = Math.min(canvas.width, canvas.height);
+	var padding = 10;
+	var cellSize = (minSide - 2 * padding) / size;
 
-var stonesCanvas = document.createElement("canvas");
-stonesCanvas.width = minSide;
-stonesCanvas.height = minSide;
+	var animations = [];
 
-function drawBoardBackground(context) {
-	context.save();
+	var cachedBackgroundCanvas = document.createElement("canvas");
+	cachedBackgroundCanvas.width = minSide;
+	cachedBackgroundCanvas.height = minSide;
+	var cachedBlackStoneCanvas = document.createElement("canvas");
+	cachedBlackStoneCanvas.width = cellSize;
+	cachedBlackStoneCanvas.height = cellSize;
+	var cachedWhiteStoneCanvas = document.createElement("canvas");
+	cachedWhiteStoneCanvas.width = cellSize;
+	cachedWhiteStoneCanvas.height = cellSize;
 
-	context.fillStyle = "#E2C58B"
-	context.fillRect(0, 0, minSide, minSide);
+	var stonesCanvas = document.createElement("canvas");
+	stonesCanvas.width = minSide;
+	stonesCanvas.height = minSide;
 
-	context.strokeStyle = "rgba(180, 139, 89, 0.4)";
-	context.lineWidth = 2;
-	context.shadowColor = "rgba(180, 139, 89, 0.9)";
-	context.shadowBlur = 3;
-	context.shadowOffsetX = -3;
-	context.shadowOffsetY = 0;
-	context.beginPath();
-	var boardBackgroundStreaks = [];
-	for (var x = 0; x < minSide; ) {
-		x += Math.random() * minSide / 10;
-		context.moveTo(x, 0);
-		context.lineTo(x + (2 * Math.random() - 1) * 1 * minSide / 30, minSide);
-	}
-	context.stroke();
-
-	drawBoardLines(context);
-
-	var gradient = context.createLinearGradient(0, 0, minSide, 0);
-	gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
-	gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
-	gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.09)");
-	gradient.addColorStop(0.70, "rgba(255, 255, 255, 0.01)");
-	gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
-	context.fillStyle = gradient;
-	context.fillRect(0, 0, minSide, minSide);
-
-	context.restore();
-}
-function drawBoardLines(context) {
-	context.save();
-	context.globalAlpha = 0.8;
-	context.lineWidth = 4;
-	context.strokeStyle = "#333333";
-	context.shadowColor = "rgba(10, 10, 10, 0.3)";
-	context.shadowBlur = 1;
-	context.shadowOffsetX = 1;
-	context.shadowOffsetY = 1;
-	var offset = padding + cellSize/2;
-	context.translate(offset, offset);
-	context.beginPath();
-	for (var i = 0; i < size; i++) {
-		context.moveTo(0, i * cellSize);
-		context.lineTo(minSide - offset * 2, i * cellSize);
-		context.moveTo(i * cellSize, 0);
-		context.lineTo(i * cellSize, minSide - offset * 2);
-	}
-	context.stroke();
-	context.restore();
-}
-function drawRawStone(context, type) {
-	context.save();
-	context.translate(cellSize / 2, cellSize / 2);
-	context.scale(stoneSizeRatio, stoneSizeRatio);
-
-	context.lineWidth = 1;
-	context.shadowColor = "rgba(30, 30, 30, 0.5)";
-	context.shadowBlur = 5;
-	context.shadowOffsetX = 4;
-	context.shadowOffsetY = 4;
-
-	var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
-	if (type == WHITE) {
-		context.strokeStyle = "#DDDDDD";
-		gradient.addColorStop(0, "#B0B0B0");
-		gradient.addColorStop(1, "#DDDDDD");
-	} else if (type == BLACK) {
-		context.strokeStyle = "#222222";
-		gradient.addColorStop(0, "#222222");
-		gradient.addColorStop(1, "#333333");
-	}
-	context.fillStyle = gradient;
-
-	context.beginPath();
-	context.arc(0, 0, cellSize, 0, Math.PI*2);
-	context.stroke();
-	context.fill();
-
-	context.restore();
-}
-
-function drawOneStone(context, type, x, y) {
-	if (type == EMPTY) {
-		return;
-	}
-	var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
-	context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
-}
-function drawBoardStones(context) {
-	context.save();
-	context.clearRect(0, 0, minSide, minSide);
-	for (var row = 0; row < size; row++) {
-		for (var col = 0; col < size; col++) {
-			var stone = board[row][col];
-			drawOneStone(context, stone.type, stone.pos.x, stone.pos.y);
-		}
-	}
-	context.restore();
-}
-function translateRowCol(row, col) {
-	var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
-	var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
-	var x = padding + cellSize/2 + col * cellSize + wiggleX;
-	var y = padding + cellSize/2 + row * cellSize + wiggleY;
-	return {x: x, y: y};
-}
-
-drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 0, 0);
-drawRawStone(cachedBlackStoneCanvas.getContext("2d"), BLACK, 0, 0);
-drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
-
-function drawBoard() {
-	context.drawImage(cachedBackgroundCanvas, 0, 0);
-	context.drawImage(stonesCanvas, 0, 0);
-}
-
-function update() {
-	drawBoard();
-	for (var i = animations.length - 1; i >= 0; i--) {
+	function drawBoardBackground(context) {
 		context.save();
-		var shouldContinue = animations[i]();
-		context.restore();
-		if (!shouldContinue) {
-			animations.splice(i, 1);
+
+		context.fillStyle = "#E2C58B"
+		context.fillRect(0, 0, minSide, minSide);
+
+		context.strokeStyle = "rgba(180, 139, 89, 0.4)";
+		context.lineWidth = 2;
+		context.shadowColor = "rgba(180, 139, 89, 0.9)";
+		context.shadowBlur = 3;
+		context.shadowOffsetX = -3;
+		context.shadowOffsetY = 0;
+		context.beginPath();
+		var boardBackgroundStreaks = [];
+		for (var x = 0; x < minSide; ) {
+			x += Math.random() * minSide / 10;
+			context.moveTo(x, 0);
+			context.lineTo(x + (2 * Math.random() - 1) * 1 * minSide / 30, minSide);
 		}
+		context.stroke();
+
+		drawBoardLines(context);
+
+		var gradient = context.createLinearGradient(0, 0, minSide, 0);
+		gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
+		gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
+		gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.09)");
+		gradient.addColorStop(0.70, "rgba(255, 255, 255, 0.01)");
+		gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
+		context.fillStyle = gradient;
+		context.fillRect(0, 0, minSide, minSide);
+
+		context.restore();
+	}
+	function drawBoardLines(context) {
+		context.save();
+		context.globalAlpha = 0.8;
+		context.lineWidth = 4;
+		context.strokeStyle = "#333333";
+		context.shadowColor = "rgba(10, 10, 10, 0.3)";
+		context.shadowBlur = 1;
+		context.shadowOffsetX = 1;
+		context.shadowOffsetY = 1;
+		var offset = padding + cellSize/2;
+		context.translate(offset, offset);
+		context.beginPath();
+		for (var i = 0; i < size; i++) {
+			context.moveTo(0, i * cellSize);
+			context.lineTo(minSide - offset * 2, i * cellSize);
+			context.moveTo(i * cellSize, 0);
+			context.lineTo(i * cellSize, minSide - offset * 2);
+		}
+		context.stroke();
+		context.restore();
+	}
+	function drawRawStone(context, type) {
+		context.save();
+		context.translate(cellSize / 2, cellSize / 2);
+		context.scale(stoneSizeRatio, stoneSizeRatio);
+
+		context.lineWidth = 1;
+		context.shadowColor = "rgba(30, 30, 30, 0.5)";
+		context.shadowBlur = 5;
+		context.shadowOffsetX = 4;
+		context.shadowOffsetY = 4;
+
+		var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
+		if (type == WHITE) {
+			context.strokeStyle = "#DDDDDD";
+			gradient.addColorStop(0, "#B0B0B0");
+			gradient.addColorStop(1, "#DDDDDD");
+		} else if (type == BLACK) {
+			context.strokeStyle = "#222222";
+			gradient.addColorStop(0, "#222222");
+			gradient.addColorStop(1, "#333333");
+		}
+		context.fillStyle = gradient;
+
+		context.beginPath();
+		context.arc(0, 0, cellSize, 0, Math.PI*2);
+		context.stroke();
+		context.fill();
+
+		context.restore();
+	}
+
+	function drawOneStone(context, type, x, y) {
+		if (type == EMPTY) {
+			return;
+		}
+		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+		context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
+	}
+	function drawBoardStones(context) {
+		context.save();
+		context.clearRect(0, 0, minSide, minSide);
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				var stone = board[row][col];
+				drawOneStone(context, stone.type, stone.pos.x, stone.pos.y);
+			}
+		}
+		context.restore();
+	}
+	function translateRowCol(row, col) {
+		var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
+		var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
+		var x = padding + cellSize/2 + col * cellSize + wiggleX;
+		var y = padding + cellSize/2 + row * cellSize + wiggleY;
+		return {x: x, y: y};
+	}
+
+	drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 0, 0);
+	drawRawStone(cachedBlackStoneCanvas.getContext("2d"), BLACK, 0, 0);
+	drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
+
+	function drawBoard() {
+		context.drawImage(cachedBackgroundCanvas, 0, 0);
+		context.drawImage(stonesCanvas, 0, 0);
+	}
+
+	function update() {
+		drawBoard();
+		for (var i = animations.length - 1; i >= 0; i--) {
+			context.save();
+			var shouldContinue = animations[i]();
+			context.restore();
+			if (!shouldContinue) {
+				animations.splice(i, 1);
+			}
+		}
+		window.requestAnimationFrame(update);
 	}
 	window.requestAnimationFrame(update);
-}
-window.requestAnimationFrame(update);
 
-function onClick(event) {
-	var mouseX = event.pageX - canvas.offsetLeft;
-	var mouseY = event.pageY - canvas.offsetTop;
-	var col = Math.round((mouseX - padding - cellSize/2) / cellSize);
-	var row = Math.round((mouseY - padding - cellSize/2) / cellSize);
-	var stone = getStone(row, col);
-	if (stone.type != EMPTY) {
-		return;	
+	function playAt(row, col) {
+		var stone = getStone(row, col);
+		if (stone.type != EMPTY) {
+			return;	
+		}
+		stone.type = turn;
+		var removed = sweepBoard(turn);
+		animatePlay(stone, removed);
+		turn = turn === BLACK ? WHITE : BLACK;
 	}
-	stone.type = turn;
-	var removed = sweepBoard(turn);
-	animatePlay(stone, removed);
-	turn = turn === BLACK ? WHITE : BLACK;
-}
 
-function animatePlay(stone, removed) {
-	var step = 0;
-	var direction = stone.type == WHITE ? -1 : 1;
-	animations.push(function() {
-		context.globalAlpha = step;
-		context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction * 2);
-		context.scale(1.5 - step/2, 1.5 - step/2);
-		drawOneStone(context, stone.type, 0, 0);
-		step += 0.1;
-		if (step <= 1) {
-			return true;
-		} else {
-			for (var removedStone of removed) {
-				animateRemoval(removedStone);
+	function animatePlay(stone, removed) {
+		var step = 0;
+		var direction = stone.type == WHITE ? -1 : 1;
+		animations.push(function() {
+			context.globalAlpha = step;
+			context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction * 2);
+			context.scale(1.5 - step/2, 1.5 - step/2);
+			drawOneStone(context, stone.type, 0, 0);
+			step += 0.1;
+			if (step <= 1) {
+				return true;
+			} else {
+				for (var removedStone of removed) {
+					animateRemoval(removedStone);
+				}
+				drawBoardStones(stonesCanvas.getContext("2d"));
+				return false;
 			}
-			drawBoardStones(stonesCanvas.getContext("2d"));
-			return false;
-		}
-	});
-}
+		});
+	}
 
-function animateRemoval(stone) {
-	var step = 0;
-	animations.push(function() {
-		step += 0.1;
-		if (step > 1) {
-			return false;
-		}
-		context.globalAlpha = 1 - step;
-		context.translate(stone.pos.x, stone.pos.y);
-		context.scale(1 + step/3, 1 + step/3);
-		drawOneStone(context, stone.previously, 0, 0);
-		return true;
-	});
-}
+	function animateRemoval(stone) {
+		var step = 0;
+		animations.push(function() {
+			step += 0.1;
+			if (step > 1) {
+				return false;
+			}
+			context.globalAlpha = 1 - step;
+			context.translate(stone.pos.x, stone.pos.y);
+			context.scale(1 + step/3, 1 + step/3);
+			drawOneStone(context, stone.previously, 0, 0);
+			return true;
+		});
+	}
 
-function sweepBoard(turn) {
-	var removed = [];
+	function sweepBoard(turn) {
+		var removed = [];
 
-	calculateGroups();
-	calculateLiberties();
-	removeLockedGroups(turn == WHITE ? BLACK : WHITE, removed);
+		calculateGroups();
+		calculateLiberties();
+		removeLockedGroups(turn == WHITE ? BLACK : WHITE, removed);
 
-	calculateGroups();
-	calculateLiberties();
-	removeLockedGroups(turn, removed);
+		calculateGroups();
+		calculateLiberties();
+		removeLockedGroups(turn, removed);
 
-	return removed;
-}
+		return removed;
+	}
 
-function removeLockedGroups(type, removed) {
-	for (var row = 0; row < size; row++) {
-		for (var col = 0; col < size; col++) {
-			var stone = getStone(row, col);
-			var group = stone.group;
-			if (stone.type == type && group.liberties === 0 && removed.indexOf(stone) == -1) {
-				for (var stone of group.members) {
-					removed.push(stone);
-					stone.previously = stone.type;
-					stone.type = EMPTY;
+	function removeLockedGroups(type, removed) {
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				var stone = getStone(row, col);
+				var group = stone.group;
+				if (stone.type == type && group.liberties === 0 && removed.indexOf(stone) == -1) {
+					for (var stone of group.members) {
+						removed.push(stone);
+						stone.previously = stone.type;
+						stone.type = EMPTY;
+					}
 				}
 			}
 		}
 	}
-}
 
-function getStone(row, col) {
-	if (row < 0 || row >= size || col < 0 || col >= size) {
-		return {type: NOTHING};
-	}
-	return board[row][col];
-}
-
-function calculateGroups() {
-	var visited = {};
-	for (var row = 0; row < size; row++) {
-		for (var col = 0; col < size; col++) {
-			var type = getStone(row, col).type;
-			var group = {liberties: 0, members: []};
-			groupOne(row, col, type, group, visited);
+	function getStone(row, col) {
+		if (row < 0 || row >= size || col < 0 || col >= size) {
+			return {type: NOTHING};
 		}
-	}
-}
-
-function groupOne(row, col, type, group, visited) {
-	var stone = getStone(row, col);
-	if (visited[[row, col]] || stone.type != type) {
-		return;
+		return board[row][col];
 	}
 
-	stone.group = group;
-	visited[[row, col]] = true;
-	group.members.push(stone);
-
-	groupOne(row-1, col, type, group, visited);
-	groupOne(row+1, col, type, group, visited);
-	groupOne(row, col-1, type, group, visited);
-	groupOne(row, col+1, type, group, visited);
-}
-
-function calculateLiberties() {
-	function addLiberty(row, col) {
-		var stone = getStone(row, col);
-		if (stone.type != NOTHING) {
-			stone.group.liberties += 1;
-		}
-	}
-
-	for (var row = 0; row < size; row++) {
-		for (var col = 0; col < size; col++) {
-			if (getStone(row, col).type == EMPTY) {
-				addLiberty(row-1, col);
-				addLiberty(row+1, col);
-				addLiberty(row, col-1);
-				addLiberty(row, col+1);
+	function calculateGroups() {
+		var visited = {};
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				var type = getStone(row, col).type;
+				var group = {liberties: 0, members: []};
+				groupOne(row, col, type, group, visited);
 			}
 		}
 	}
+
+	function groupOne(row, col, type, group, visited) {
+		var stone = getStone(row, col);
+		if (visited[[row, col]] || stone.type != type) {
+			return;
+		}
+
+		stone.group = group;
+		visited[[row, col]] = true;
+		group.members.push(stone);
+
+		groupOne(row-1, col, type, group, visited);
+		groupOne(row+1, col, type, group, visited);
+		groupOne(row, col-1, type, group, visited);
+		groupOne(row, col+1, type, group, visited);
+	}
+
+	function calculateLiberties() {
+		function addLiberty(row, col) {
+			var stone = getStone(row, col);
+			if (stone.type != NOTHING) {
+				stone.group.liberties += 1;
+			}
+		}
+
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				if (getStone(row, col).type == EMPTY) {
+					addLiberty(row-1, col);
+					addLiberty(row+1, col);
+					addLiberty(row, col-1);
+					addLiberty(row, col+1);
+				}
+			}
+		}
+	}
+
+	for (var row = 0; row < size; row++) {
+		board.push([]);
+		for (var col = 0; col < size; col++) {
+			var pos = translateRowCol(row, col);
+			board[row][col] = {type: EMPTY,
+							   row: row,
+							   col: col,
+							   pos: pos};
+		}
+	}
+
+	function screenToBoard(x, y) {
+		var mouseX = x - canvas.offsetLeft;
+		var mouseY = y - canvas.offsetTop;
+		return [Math.round((mouseY - padding - cellSize/2) / cellSize),
+				Math.round((mouseX - padding - cellSize/2) / cellSize)]
+	}
+
+	return {
+		playAt: playAt,
+		screenToBoard: screenToBoard,
+	}
+}
+
+var canvas = document.getElementById("go-board");
+var game = Game(5, canvas);
+function onClick(event) {
+	var pos = game.screenToBoard(event.pageX, event.pageY);
+	game.playAt(pos[0], pos[1]);
 }
 
 canvas.onclick = onClick;
 
-for (var row = 0; row < size; row++) {
-	board.push([]);
-	for (var col = 0; col < size; col++) {
-		var pos = translateRowCol(row, col);
-		board[row][col] = {type: EMPTY,
-						   row: row,
-						   col: col,
-						   pos: pos};
-	}
-}
 		</script>
 	</body>
 </html>
