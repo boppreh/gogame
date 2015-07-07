@@ -192,11 +192,12 @@ function onClick(event) {
 		return;	
 	}
 	board[row][col] = turn;
-	animatePlay(turn, row, col);
+	var removed = sweepBoard(animateRemoval);
+	animatePlay(turn, row, col, removed);
 	turn = turn === BLACK ? WHITE : BLACK;
 }
 
-function animatePlay(stone, row, col) {
+function animatePlay(stone, row, col, removed) {
 	var step = 0;
 	var pos = translateRowCol(row, col);
 	var direction = stone == WHITE ? -1 : 1;
@@ -209,25 +210,50 @@ function animatePlay(stone, row, col) {
 		if (step <= 1) {
 			return true;
 		} else {
+			for (var r of removed) {
+				animateRemoval(r.stone, r.row, r.col);
+			}
 			drawBoardStones(stonesCanvas.getContext("2d"));
 			return false;
 		}
 	});
 }
 
+function animateRemoval(stone, row, col) {
+	var step = 0;
+	var pos = translateRowCol(row, col);
+	animations.push(function() {
+		step += 0.1;
+		if (step > 1) {
+			return false;
+		}
+		context.globalAlpha = 1 - step;
+		context.translate(pos.x, pos.y);
+		context.scale(1 + step/3, 1 + step/3);
+		drawOneStone(context, stone, 0, 0);
+		return true;
+	});
+}
+
 function sweepBoard() {
 	var groups = calculateGroups();
+	var removed = [];
 	for (var pos in groups) {
 		var group = groups[pos];
 		if (group.nLiberties === 0) {
-			removeGroup(group);
+			removeGroup(group, removed);
 		}		
 	}
+	return removed;
 }
 
-function removeGroup(group) {
+function removeGroup(group, removed) {
 	for (var pos of group.stones) {
-		board[pos[0]][pos[1]] = EMPTY;
+		var row = pos[0];
+		var col = pos[1];
+		var previously = board[row][col];
+		board[row][col] = EMPTY;
+		removed.push({stone: previously, row: row, col: col});
 	}
 }
 
