@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Go</title>
+		<meta charset='utf-8'>
+	</head>
+
+	<body>
+		<canvas id="go-board" width=500 height=500>
+
+		<script>
+function drawBoard(size) {
+	var canvas = document.getElementById("go-board");
+	context = canvas.getContext("2d");
+
+	var padding = 10;
+
+	context.lineWidth = 3;
+	var minSide = Math.min(canvas.width, canvas.height);
+	var cellSize = (minSide - 2 * padding) / size;
+
+	context.fillStyle = "#CECECE";
+	context.fillRect(0, 0, minSide, minSide);
+
+	context.strokeStyle = "#333333";
+	for (var i = padding + cellSize/2; i <= minSide - padding - cellSize/2; i += cellSize) {
+		context.beginPath();
+		context.moveTo(padding + cellSize/2, i);
+		context.lineTo(minSide - padding - cellSize/2, i);
+		context.moveTo(i, padding + cellSize/2);
+		context.lineTo(i, minSide - padding - cellSize/2);
+		context.stroke();
+	}
+}
+
+drawBoard(5);
+		</script>
+	</body>
+</html>
