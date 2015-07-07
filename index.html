@@ -165,24 +165,51 @@ function getStone(row, col) {
 	}
 	return board[row][col];
 }
-function groups() {
+function calculateGroups() {
 	var groups = {};
+	function addLiberty(stonePos, libertyPos) {
+		var group = groups[stonePos];
+		if (group) {
+			group.liberties[libertyPos] = true;
+		}
+	}
+
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
 			var stone = getStone(row, col);
 			if (stone == EMPTY) {
 				continue;
-			}
-			if (stone == getStone(row-1, col)) {
-				groups[[row, col]] = groups[[row-1, col]];
-			} else if (stone == getStone(row, col-1)) {
-				groups[[row, col]] = groups[[row, col-1]];
 			} else {
-				groups[[row, col]] = [];
+				if (stone == getStone(row-1, col)) {
+					groups[[row, col]] = groups[[row-1, col]];
+				} else if (stone == getStone(row, col-1)) {
+					groups[[row, col]] = groups[[row, col-1]];
+				} else {
+					var group = []
+					group.liberties = {};
+					groups[[row, col]] = group;
+				}
+				groups[[row, col]].push([row, col])
 			}
-			groups[[row, col]].push([row, col])
 		}
 	}
+
+	for (var row = 0; row < size; row++) {
+		for (var col = 0; col < size; col++) {
+			if (getStone(row, col) == EMPTY) {
+				addLiberty([row-1, col], [row, col]);
+				addLiberty([row+1, col], [row, col]);
+				addLiberty([row, col-1], [row, col]);
+				addLiberty([row, col+1], [row, col]);
+			}
+		}
+	}
+
+	for (var pos in groups) {
+		var group = groups[pos];
+		group.nLiberties = Object.keys(group.liberties).length;
+	}
+
 	return groups;
 }
 
