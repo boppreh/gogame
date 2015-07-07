@@ -155,8 +155,35 @@ function playAt(row, col) {
 		return;	
 	}
 	board[row][col] = turn;
-	turn = turn == BLACK ? WHITE : BLACK;
+	if (sweepBoard()) {
+		turn = turn === BLACK ? WHITE : BLACK;
+	} else {
+		board[row][col] = EMPTY;
+	}
 	drawBoard();
+}
+
+function sweepBoard() {
+	var groups = calculateGroups();
+	for (var pos in groups) {
+		var group = groups[pos];
+		if (group.nLiberties === 0 && group.stones[0] === turn) {
+			return false;
+		}
+	}
+	for (var pos in groups) {
+		var group = groups[pos];
+		if (group.nLiberties === 0) {
+			removeGroup(group);
+		}		
+	}
+	return true;
+}
+
+function removeGroup(group) {
+	for (var pos of group.stones) {
+		board[pos[0]][pos[1]] = EMPTY;
+	}
 }
 
 function getStone(row, col) {
@@ -165,6 +192,7 @@ function getStone(row, col) {
 	}
 	return board[row][col];
 }
+
 function calculateGroups() {
 	var groups = {};
 	function addLiberty(stonePos, libertyPos) {
@@ -180,23 +208,24 @@ function calculateGroups() {
 			if (stone == EMPTY) {
 				continue;
 			} else {
-				if (stone == getStone(row-1, col)) {
+				if (stone === getStone(row-1, col)) {
 					groups[[row, col]] = groups[[row-1, col]];
-				} else if (stone == getStone(row, col-1)) {
+				} else if (stone === getStone(row, col-1)) {
 					groups[[row, col]] = groups[[row, col-1]];
 				} else {
-					var group = []
+					var group = {};
 					group.liberties = {};
+					group.stones = [];
 					groups[[row, col]] = group;
 				}
-				groups[[row, col]].push([row, col])
+				groups[[row, col]].stones.push([row, col])
 			}
 		}
 	}
 
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
-			if (getStone(row, col) == EMPTY) {
+			if (getStone(row, col) === EMPTY) {
 				addLiberty([row-1, col], [row, col]);
 				addLiberty([row+1, col], [row, col]);
 				addLiberty([row, col-1], [row, col]);
