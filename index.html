@@ -16,6 +16,7 @@ var WHITE = "white";
 
 var size = 5;
 var board = [];
+var turn = BLACK;
 
 for (var row = 0; row < size; row++) {
 	board.push([]);
@@ -134,7 +135,12 @@ function onClick(event) {
 	var mouseY = event.pageY - canvas.offsetTop;
 	var col = Math.round((mouseX - padding - cellSize/2) / cellSize);
 	var row = Math.round((mouseY - padding - cellSize/2) / cellSize);
-	board[row][col] = Math.random() > 0.5 ? BLACK : WHITE;
+	playAt(row, col);
+}
+
+function playAt(row, col) {
+	board[row][col] = turn;
+	turn = turn == BLACK ? WHITE : BLACK;
 	drawBoard();
 }
 
