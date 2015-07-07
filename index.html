@@ -97,55 +97,59 @@ function drawBoardLines(context) {
 	context.stroke();
 	context.restore();
 }
+function drawOneStone(context, row, col, x, y) {
+	context.save();
+	var stone = board[row][col];
+	if (stone == EMPTY) {
+		return;
+	}
+
+	context.lineWidth = 1;
+	context.shadowColor = "rgba(30, 30, 30, 0.5)";
+	context.shadowBlur = 5;
+	context.shadowOffsetX = 4;
+	context.shadowOffsetY = 4;
+
+	var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
+	if (stone == WHITE) {
+		context.strokeStyle = "#DDDDDD";
+		gradient.addColorStop(0, "#B0B0B0");
+		gradient.addColorStop(1, "#DDDDDD");
+	} else if (stone == BLACK) {
+		context.strokeStyle = "#222222";
+		gradient.addColorStop(0, "#222222");
+		gradient.addColorStop(1, "#333333");
+	}
+	context.fillStyle = gradient;
+
+	context.beginPath();
+	context.arc(x, y, cellSize * stoneSizeRatio, 0, Math.PI*2);
+	context.stroke();
+	context.fill();
+
+	// Attempt at specular light.
+	/*
+	context.fillStyle = "rgba(255, 255, 255, 0.05)";
+	context.shadowColor = "rgba(255, 255, 255, 1)";
+	context.shadowBlur = 5;
+	context.shadowOffsetX = 3;
+	context.shadowOffsetY = 3;
+	context.beginPath();
+	context.arc(x - cellSize * stoneSizeRatio * 0.35, y - cellSize  * stoneSizeRatio * 0.35, cellSize * stoneSizeRatio * 0.3, 0, Math.PI*2);
+	context.fill();
+	*/
+	context.restore();
+}
 function drawBoardStones(context) {
 	context.save();
 	context.clearRect(0, 0, minSide, minSide);
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
-			var stone = board[row][col];
-			if (stone == EMPTY) {
-				continue;
-			}
-
-			context.lineWidth = 1;
-			context.shadowColor = "rgba(30, 30, 30, 0.5)";
-			context.shadowBlur = 5;
-			context.shadowOffsetX = 4;
-			context.shadowOffsetY = 4;
-
 			var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
 			var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
 			var x = padding + cellSize/2 + col * cellSize + wiggleX;
 			var y = padding + cellSize/2 + row * cellSize + wiggleY;
-
-			var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
-			if (stone == WHITE) {
-				context.strokeStyle = "#DDDDDD";
-				gradient.addColorStop(0, "#B0B0B0");
-				gradient.addColorStop(1, "#DDDDDD");
-			} else if (stone == BLACK) {
-				context.strokeStyle = "#222222";
-				gradient.addColorStop(0, "#222222");
-				gradient.addColorStop(1, "#333333");
-			}
-			context.fillStyle = gradient;
-
-			context.beginPath();
-			context.arc(x, y, cellSize * stoneSizeRatio, 0, Math.PI*2);
-			context.stroke();
-			context.fill();
-
-			// Attempt at specular light.
-			/*
-			context.fillStyle = "rgba(255, 255, 255, 0.05)";
-			context.shadowColor = "rgba(255, 255, 255, 1)";
-			context.shadowBlur = 5;
-			context.shadowOffsetX = 3;
-			context.shadowOffsetY = 3;
-			context.beginPath();
-			context.arc(x - cellSize * stoneSizeRatio * 0.35, y - cellSize  * stoneSizeRatio * 0.35, cellSize * stoneSizeRatio * 0.3, 0, Math.PI*2);
-			context.fill();
-			*/
+			drawOneStone(context, row, col, x, y);
 		}
 	}
 	context.restore();
