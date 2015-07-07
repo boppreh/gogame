@@ -11,18 +11,12 @@
 		<script>
 "use strict";
 
-function Game(size, canvas) {
-	size = size || 5;
+var EMPTY = "empty";
+var BLACK = "black";
+var WHITE = "white";
+var NOTHING = "nothing";
 
-	var EMPTY = "empty";
-	var BLACK = "black";
-	var WHITE = "white";
-	var NOTHING = "nothing";
-
-	var size = 5;
-	var board = [];
-	var turn = BLACK;
-
+function Renderer(size, canvas) {
 	var stoneSizeRatio = 0.8 / 2;
 	var context = canvas.getContext("2d");
 	var minSide = Math.min(canvas.width, canvas.height);
@@ -44,6 +38,15 @@ function Game(size, canvas) {
 	var stonesCanvas = document.createElement("canvas");
 	stonesCanvas.width = minSide;
 	stonesCanvas.height = minSide;
+
+	var stonesPos = {};
+	function getStonePos(stone) {
+		var id = [stone.row, stone.col, stone.type];
+		if (!stonesPos[id]) {
+			stonesPos[id] = translateRowCol(stone.row, stone.col);
+		}
+		return stonesPos[id];
+	}
 
 	function drawBoardBackground(context) {
 		context.save();
@@ -138,13 +141,14 @@ function Game(size, canvas) {
 		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 		context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
 	}
-	function drawBoardStones(context) {
+	function drawBoardStones(context, board) {
 		context.save();
 		context.clearRect(0, 0, minSide, minSide);
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				var stone = board[row][col];
-				drawOneStone(context, stone.type, stone.pos.x, stone.pos.y);
+				var pos = getStonePos(stone);
+				drawOneStone(context, stone.type, pos.x, pos.y);
 			}
 		}
 		context.restore();
@@ -176,27 +180,15 @@ function Game(size, canvas) {
 				animations.splice(i, 1);
 			}
 		}
-		window.requestAnimationFrame(update);
-	}
-	window.requestAnimationFrame(update);
-
-	function playAt(row, col) {
-		var stone = getStone(row, col);
-		if (stone.type != EMPTY) {
-			return;	
-		}
-		stone.type = turn;
-		var removed = sweepBoard(turn);
-		animatePlay(stone, removed);
-		turn = turn === BLACK ? WHITE : BLACK;
 	}
 
-	function animatePlay(stone, removed) {
+	function animatePlay(stone, removed, board) {
 		var step = 0;
 		var direction = stone.type == WHITE ? -1 : 1;
 		animations.push(function() {
 			context.globalAlpha = step;
-			context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction * 2);
+			var pos = getStonePos(stone);
+			context.translate(pos.x, pos.y + (1 - step) * cellSize * direction * 2);
 			context.scale(1.5 - step/2, 1.5 - step/2);
 			drawOneStone(context, stone.type, 0, 0);
 			step += 0.1;
@@ -206,7 +198,7 @@ function Game(size, canvas) {
 				for (var removedStone of removed) {
 					animateRemoval(removedStone);
 				}
-				drawBoardStones(stonesCanvas.getContext("2d"));
+				drawBoardStones(stonesCanvas.getContext("2d"), board);
 				return false;
 			}
 		});
@@ -220,11 +212,44 @@ function Game(size, canvas) {
 				return false;
 			}
 			context.globalAlpha = 1 - step;
-			context.translate(stone.pos.x, stone.pos.y);
+			var pos = getStonePos(stone);
+			context.translate(pos.x, pos.y);
 			context.scale(1 + step/3, 1 + step/3);
 			drawOneStone(context, stone.previously, 0, 0);
 			return true;
 		});
+	}
+
+	function screenToBoard(x, y) {
+		var mouseX = x - canvas.offsetLeft;
+		var mouseY = y - canvas.offsetTop;
+		return [Math.round((mouseY - padding - cellSize/2) / cellSize),
+				Math.round((mouseX - padding - cellSize/2) / cellSize)]
+	}
+
+	return {
+		screenToBoard: screenToBoard,
+		update: update,
+		animatePlay: animatePlay,
+	}
+}
+
+function Game(size) {
+	size = size || 5;
+
+	var size = 5;
+	var board = [];
+	var turn = BLACK;
+
+	function playAt(row, col) {
+		var stone = getStone(row, col);
+		if (stone.type != EMPTY) {
+			return {};	
+		}
+		stone.type = turn;
+		var removed = sweepBoard(turn);
+		turn = turn === BLACK ? WHITE : BLACK;
+		return {stone: stone, removed: removed}
 	}
 
 	function sweepBoard(turn) {
@@ -311,38 +336,43 @@ function Game(size, canvas) {
 		}
 	}
 
-	for (var row = 0; row < size; row++) {
-		board.push([]);
-		for (var col = 0; col < size; col++) {
-			var pos = translateRowCol(row, col);
-			board[row][col] = {type: EMPTY,
-							   row: row,
-							   col: col,
-							   pos: pos};
+	function initializeBoard() {
+		for (var row = 0; row < size; row++) {
+			board.push([]);
+			for (var col = 0; col < size; col++) {
+				board[row][col] = {type: EMPTY,
+								   row: row,
+								   col: col};
+			}
 		}
 	}
 
-	function screenToBoard(x, y) {
-		var mouseX = x - canvas.offsetLeft;
-		var mouseY = y - canvas.offsetTop;
-		return [Math.round((mouseY - padding - cellSize/2) / cellSize),
-				Math.round((mouseX - padding - cellSize/2) / cellSize)]
-	}
+	initializeBoard();
 
 	return {
+		board: board,
 		playAt: playAt,
-		screenToBoard: screenToBoard,
 	}
 }
 
 var canvas = document.getElementById("go-board");
-var game = Game(5, canvas);
-function onClick(event) {
-	var pos = game.screenToBoard(event.pageX, event.pageY);
-	game.playAt(pos[0], pos[1]);
-}
+var game = Game(5);
+var renderer = Renderer(5, canvas);
 
+function onClick(event) {
+	var pos = renderer.screenToBoard(event.pageX, event.pageY);
+	var play = game.playAt(pos[0], pos[1]);
+	if (play) {
+		renderer.animatePlay(play.stone, play.removed, game.board);
+	}
+}
 canvas.onclick = onClick;
+
+function update() {
+	renderer.update();
+	window.requestAnimationFrame(update);
+}
+window.requestAnimationFrame(update);
 
 		</script>
 	</body>
