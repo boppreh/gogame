@@ -243,7 +243,7 @@ function Game(size) {
 	function playAt(row, col) {
 		var stone = getStone(row, col);
 		if (stone.type != EMPTY) {
-			return {};	
+			return null;
 		}
 		stone.type = turn;
 		var removed = sweepBoard(turn);
