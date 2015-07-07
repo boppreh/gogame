@@ -85,7 +85,7 @@ function Renderer(size, canvas) {
 	function drawBoardLines(context) {
 		context.save();
 		context.globalAlpha = 0.8;
-		context.lineWidth = 4;
+		context.lineWidth = Math.max(2, 4 * cellSize / 100);
 		context.strokeStyle = "#333333";
 		context.shadowColor = "rgba(10, 10, 10, 0.3)";
 		context.shadowBlur = 1;
@@ -110,9 +110,9 @@ function Renderer(size, canvas) {
 
 		context.lineWidth = 1;
 		context.shadowColor = "rgba(30, 30, 30, 0.5)";
-		context.shadowBlur = 5;
-		context.shadowOffsetX = 4;
-		context.shadowOffsetY = 4;
+		context.shadowBlur = 5 * cellSize / 100;
+		context.shadowOffsetX = 4 * cellSize / 100;
+		context.shadowOffsetY = 4 * cellSize / 100;
 
 		var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
 		if (type == WHITE) {
@@ -237,7 +237,6 @@ function Renderer(size, canvas) {
 function Game(size) {
 	size = size || 5;
 
-	var size = 5;
 	var board = [];
 	var turn = BLACK;
 
@@ -356,8 +355,8 @@ function Game(size) {
 }
 
 var canvas = document.getElementById("go-board");
-var game = Game(5);
-var renderer = Renderer(5, canvas);
+var game = Game(19);
+var renderer = Renderer(19, canvas);
 
 function onClick(event) {
 	var pos = renderer.screenToBoard(event.pageX, event.pageY);
