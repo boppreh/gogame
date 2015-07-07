@@ -198,8 +198,8 @@ function animatePlay(stone, removed) {
 	var direction = stone.type == WHITE ? -1 : 1;
 	animations.push(function() {
 		context.globalAlpha = step;
-		context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction);
-		context.scale(2 - step, 2 - step);
+		context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction * 2);
+		context.scale(1.5 - step/2, 1.5 - step/2);
 		drawOneStone(context, stone.type, 0, 0);
 		step += 0.1;
 		if (step <= 1) {
