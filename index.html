@@ -40,8 +40,19 @@ for (var x = 0; x < minSide; ) {
 }
 function drawBoardBackground() {
 	context.save();
-	context.fillStyle = "#E2C58B";
+
+	context.fillStyle = "#E2C58B"
 	context.fillRect(0, 0, minSide, minSide);
+
+	var gradient = context.createLinearGradient(0, 0, minSide, 0);
+	gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
+	gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
+	gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.05)");
+	gradient.addColorStop(0.60, "rgba(255, 255, 255, 0.01)");
+	gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, minSide, minSide);
+
 
 	context.strokeStyle = "rgba(180, 139, 89, 0.4)";
 	context.lineWidth = 2;
@@ -141,7 +152,7 @@ function onClick(event) {
 
 function playAt(row, col) {
 	if (getStone(row, col) != EMPTY) {
-		return;
+		return;	
 	}
 	board[row][col] = turn;
 	turn = turn == BLACK ? WHITE : BLACK;
