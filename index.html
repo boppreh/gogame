@@ -13,6 +13,7 @@
 var EMPTY = "empty";
 var BLACK = "black";
 var WHITE = "white";
+var NOTHING = "nothing";
 
 var size = 5;
 var board = [];
@@ -142,6 +143,33 @@ function playAt(row, col) {
 	board[row][col] = turn;
 	turn = turn == BLACK ? WHITE : BLACK;
 	drawBoard();
+}
+
+function getStone(row, col) {
+	if (row < 0 || row >= size || col < 0 || col >= size) {
+		return NOTHING;
+	}
+	return board[row][col];
+}
+function groups() {
+	var groups = {};
+	for (var row = 0; row < size; row++) {
+		for (var col = 0; col < size; col++) {
+			var stone = getStone(row, col);
+			if (stone == EMPTY) {
+				continue;
+			}
+			if (stone == getStone(row-1, col)) {
+				groups[[row, col]] = groups[[row-1, col]];
+			} else if (stone == getStone(row, col-1)) {
+				groups[[row, col]] = groups[[row, col-1]];
+			} else {
+				groups[[row, col]] = [];
+			}
+			groups[[row, col]].push([row, col])
+		}
+	}
+	return groups;
 }
 
 drawBoard(5);
