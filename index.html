@@ -140,6 +140,9 @@ function onClick(event) {
 }
 
 function playAt(row, col) {
+	if (getStone(row, col) != EMPTY) {
+		return;
+	}
 	board[row][col] = turn;
 	turn = turn == BLACK ? WHITE : BLACK;
 	drawBoard();
