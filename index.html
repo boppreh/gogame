@@ -189,12 +189,15 @@ function playAt(row, col) {
 
 function sweepBoard() {
 	var groups = calculateGroups();
+	// Suicide prevention is buggy for the moment.
+	/*
 	for (var pos in groups) {
 		var group = groups[pos];
 		if (group.nLiberties === 0 && group.stones[0] === turn) {
 			return false;
 		}
 	}
+	*/
 	for (var pos in groups) {
 		var group = groups[pos];
 		if (group.nLiberties === 0) {
