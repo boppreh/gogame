@@ -87,12 +87,14 @@ function drawBoardLines(context) {
 	context.shadowBlur = 1;
 	context.shadowOffsetX = 1;
 	context.shadowOffsetY = 1;
+	var offset = padding + cellSize/2;
+	context.translate(offset, offset);
 	context.beginPath();
-	for (var i = padding + cellSize/2; i <= minSide - padding - cellSize/2; i += cellSize) {
-		context.moveTo(padding + cellSize/2, i);
-		context.lineTo(minSide - padding - cellSize/2, i);
-		context.moveTo(i, padding + cellSize/2);
-		context.lineTo(i, minSide - padding - cellSize/2);
+	for (var i = 0; i < size; i++) {
+		context.moveTo(0, i * cellSize);
+		context.lineTo(minSide - offset * 2, i * cellSize);
+		context.moveTo(i * cellSize, 0);
+		context.lineTo(i * cellSize, minSide - offset * 2);
 	}
 	context.stroke();
 	context.restore();
