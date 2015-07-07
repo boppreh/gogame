@@ -19,13 +19,6 @@ var size = 5;
 var board = [];
 var turn = BLACK;
 
-for (var row = 0; row < size; row++) {
-	board.push([]);
-	for (var col = 0; col < size; col++) {
-		board[row][col] = EMPTY;
-	}
-}
-
 var stoneSizeRatio = 0.8 / 2;
 var canvas = document.getElementById("go-board");
 var context = canvas.getContext("2d");
@@ -104,7 +97,7 @@ function drawBoardLines(context) {
 	context.stroke();
 	context.restore();
 }
-function drawRawStone(context, stone) {
+function drawRawStone(context, type) {
 	context.save();
 	context.translate(cellSize / 2, cellSize / 2);
 	context.scale(stoneSizeRatio, stoneSizeRatio);
@@ -116,11 +109,11 @@ function drawRawStone(context, stone) {
 	context.shadowOffsetY = 4;
 
 	var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
-	if (stone == WHITE) {
+	if (type == WHITE) {
 		context.strokeStyle = "#DDDDDD";
 		gradient.addColorStop(0, "#B0B0B0");
 		gradient.addColorStop(1, "#DDDDDD");
-	} else if (stone == BLACK) {
+	} else if (type == BLACK) {
 		context.strokeStyle = "#222222";
 		gradient.addColorStop(0, "#222222");
 		gradient.addColorStop(1, "#333333");
@@ -131,14 +124,15 @@ function drawRawStone(context, stone) {
 	context.arc(0, 0, cellSize, 0, Math.PI*2);
 	context.stroke();
 	context.fill();
+
 	context.restore();
 }
 
-function drawOneStone(context, stone, x, y) {
-	if (stone == EMPTY) {
+function drawOneStone(context, type, x, y) {
+	if (type == EMPTY) {
 		return;
 	}
-	var cachedCanvas = stone == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+	var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 	context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
 }
 function drawBoardStones(context) {
@@ -146,8 +140,8 @@ function drawBoardStones(context) {
 	context.clearRect(0, 0, minSide, minSide);
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
-			var pos = translateRowCol(row, col);
-			drawOneStone(context, board[row][col], pos.x, pos.y);
+			var stone = board[row][col];
+			drawOneStone(context, stone.type, stone.pos.x, stone.pos.y);
 		}
 	}
 	context.restore();
@@ -188,30 +182,31 @@ function onClick(event) {
 	var mouseY = event.pageY - canvas.offsetTop;
 	var col = Math.round((mouseX - padding - cellSize/2) / cellSize);
 	var row = Math.round((mouseY - padding - cellSize/2) / cellSize);
-	if (getStone(row, col) != EMPTY) {
+	var stone = getStone(row, col);
+	if (stone.type != EMPTY) {
 		return;	
 	}
-	board[row][col] = turn;
-	var removed = sweepBoard(animateRemoval);
-	animatePlay(turn, row, col, removed);
+	stone.type = turn;
+	//var removed = sweepBoard();
+	var removed = [];
+	animatePlay(stone, removed);
 	turn = turn === BLACK ? WHITE : BLACK;
 }
 
-function animatePlay(stone, row, col, removed) {
+function animatePlay(stone, removed) {
 	var step = 0;
-	var pos = translateRowCol(row, col);
-	var direction = stone == WHITE ? -1 : 1;
+	var direction = stone.type == WHITE ? -1 : 1;
 	animations.push(function() {
-		step += 0.1;
 		context.globalAlpha = step;
-		context.translate(pos.x, pos.y + (1 - step) * cellSize * direction);
+		context.translate(stone.pos.x, stone.pos.y + (1 - step) * cellSize * direction);
 		context.scale(2 - step, 2 - step);
-		drawOneStone(context, stone, 0, 0);
+		drawOneStone(context, stone.type, 0, 0);
+		step += 0.1;
 		if (step <= 1) {
 			return true;
 		} else {
-			for (var r of removed) {
-				animateRemoval(r.stone, r.row, r.col);
+			for (var removedStone of removed) {
+				animateRemoval(removedStone);
 			}
 			drawBoardStones(stonesCanvas.getContext("2d"));
 			return false;
@@ -219,47 +214,48 @@ function animatePlay(stone, row, col, removed) {
 	});
 }
 
-function animateRemoval(stone, row, col) {
+function animateRemoval(stone) {
 	var step = 0;
-	var pos = translateRowCol(row, col);
 	animations.push(function() {
 		step += 0.1;
 		if (step > 1) {
 			return false;
 		}
 		context.globalAlpha = 1 - step;
-		context.translate(pos.x, pos.y);
+		context.translate(stone.pos.x, stone.pos.y);
 		context.scale(1 + step/3, 1 + step/3);
-		drawOneStone(context, stone, 0, 0);
+		drawOneStone(context, stone.previously, 0, 0);
 		return true;
 	});
 }
 
 function sweepBoard() {
 	var groups = calculateGroups();
+	console.log(groups);
 	var removed = [];
 	for (var pos in groups) {
 		var group = groups[pos];
+		removed.push.apply(removed, group);
 		if (group.nLiberties === 0) {
-			removeGroup(group, removed);
+			removeGroup(group);
 		}		
 	}
 	return removed;
 }
 
-function removeGroup(group, removed) {
+function removeGroup(group) {
 	for (var pos of group.stones) {
 		var row = pos[0];
 		var col = pos[1];
-		var previously = board[row][col];
-		board[row][col] = EMPTY;
-		removed.push({stone: previously, row: row, col: col});
+		var stone = board[row][col];
+		stone.previously = stone.type;
+		stone.type = EMPTY;
 	}
 }
 
 function getStone(row, col) {
 	if (row < 0 || row >= size || col < 0 || col >= size) {
-		return NOTHING;
+		return {type: NOTHING};
 	}
 	return board[row][col];
 }
@@ -276,21 +272,25 @@ function calculateGroups() {
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
 			var stone = getStone(row, col);
-			if (stone == EMPTY) {
+			if (stone.type == EMPTY) {
 				continue;
-			} else {
-				if (stone === getStone(row-1, col)) {
-					groups[[row, col]] = groups[[row-1, col]];
-				} else if (stone === getStone(row, col-1)) {
-					groups[[row, col]] = groups[[row, col-1]];
-				} else {
-					var group = {};
-					group.liberties = {};
-					group.stones = [];
-					groups[[row, col]] = group;
-				}
-				groups[[row, col]].stones.push([row, col])
 			}
+
+			var top = getStone(row-1, col);
+			var left = getStone(row, col-1);
+			// This is not right. What happens if a stone connects two
+			// existing groups?
+			if (stone.type === top.type) {
+				groups[stone] = groups[top];
+			} else if (stone.type === left.type) {
+				groups[stone] = groups[left];
+			} else {
+				var group = {};
+				group.liberties = {};
+				group.stones = [];
+				groups[[row, col]] = group;
+			}
+			groups[[row, col]].stones.push([row, col])
 		}
 	}
 
@@ -314,7 +314,17 @@ function calculateGroups() {
 }
 
 canvas.onclick = onClick;
-animations.push();
+
+for (var row = 0; row < size; row++) {
+	board.push([]);
+	for (var col = 0; col < size; col++) {
+		var pos = translateRowCol(row, col);
+		board[row][col] = {type: EMPTY,
+						   row: row,
+						   col: col,
+						   pos: pos};
+	}
+}
 		</script>
 	</body>
 </html>
