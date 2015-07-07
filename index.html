@@ -33,12 +33,11 @@ var minSide = Math.min(canvas.width, canvas.height);
 var padding = 10;
 var cellSize = (minSide - 2 * padding) / size;
 
-var boardBackgroundStreaks = [];
-for (var x = 0; x < minSide; ) {
-	x += Math.random() * minSide / 10;
-	boardBackgroundStreaks.push([x, x + (Math.random() - 1 + 0.5) * 1 * minSide / 30]);
-}
-function drawBoardBackground() {
+var backgroundCanvas = document.createElement("canvas");
+backgroundCanvas.width = minSide;
+backgroundCanvas.height = minSide;
+
+function drawBoardBackground(context) {
 	context.save();
 
 	context.fillStyle = "#E2C58B"
@@ -51,13 +50,15 @@ function drawBoardBackground() {
 	context.shadowOffsetX = -3;
 	context.shadowOffsetY = 0;
 	context.beginPath();
-	for (var x of boardBackgroundStreaks) {
-		context.moveTo(x[0], 0);
-		context.lineTo(x[1], minSide);
-	}	
+	var boardBackgroundStreaks = [];
+	for (var x = 0; x < minSide; ) {
+		x += Math.random() * minSide / 10;
+		context.moveTo(x, 0);
+		context.lineTo(x + (Math.random() - 1 + 0.5) * 1 * minSide / 30, minSide);
+	}
 	context.stroke();
 
-	drawBoardLines();
+	drawBoardLines(context);
 
 	var gradient = context.createLinearGradient(0, 0, minSide, 0);
 	gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
@@ -70,7 +71,9 @@ function drawBoardBackground() {
 
 	context.restore();
 }
-function drawBoardLines() {
+drawBoardBackground(backgroundCanvas.getContext("2d"));
+
+function drawBoardLines(context) {
 	context.save();
 	context.globalAlpha = 0.8;
 	context.lineWidth = 4;
@@ -89,7 +92,7 @@ function drawBoardLines() {
 	context.stroke();
 	context.restore();
 }
-function drawBoardStones() {
+function drawBoardStones(context) {
 	context.save();
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
@@ -140,8 +143,8 @@ function drawBoardStones() {
 	context.restore();
 }
 function drawBoard() {
-	drawBoardBackground();
-	drawBoardStones();
+	context.drawImage(backgroundCanvas, 0, 0);
+	drawBoardStones(context);
 }
 
 function onClick(event) {
