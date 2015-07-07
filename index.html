@@ -107,8 +107,10 @@ function drawBoardStones(context) {
 			context.shadowOffsetX = 4;
 			context.shadowOffsetY = 4;
 
-			var x = padding + cellSize/2 + col * cellSize;
-			var y = padding + cellSize/2 + row * cellSize;
+			var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
+			var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
+			var x = padding + cellSize/2 + col * cellSize + wiggleX;
+			var y = padding + cellSize/2 + row * cellSize + wiggleY;
 
 			var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
 			if (stone == WHITE) {
