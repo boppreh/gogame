@@ -33,9 +33,14 @@ var minSide = Math.min(canvas.width, canvas.height);
 var padding = 10;
 var cellSize = (minSide - 2 * padding) / size;
 
+var animations = [];
+
 var backgroundCanvas = document.createElement("canvas");
 backgroundCanvas.width = minSide;
 backgroundCanvas.height = minSide;
+var stonesCanvas = document.createElement("canvas");
+stonesCanvas.width = minSide;
+stonesCanvas.height = minSide;
 
 function drawBoardBackground(context) {
 	context.save();
@@ -54,7 +59,7 @@ function drawBoardBackground(context) {
 	for (var x = 0; x < minSide; ) {
 		x += Math.random() * minSide / 10;
 		context.moveTo(x, 0);
-		context.lineTo(x + (Math.random() - 1 + 0.5) * 1 * minSide / 30, minSide);
+		context.lineTo(x + (2 * Math.random() - 1) * 1 * minSide / 30, minSide);
 	}
 	context.stroke();
 
@@ -94,6 +99,7 @@ function drawBoardLines(context) {
 }
 function drawBoardStones(context) {
 	context.save();
+	context.clearRect(0, 0, minSide, minSide);
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
 			var stone = board[row][col];
@@ -146,8 +152,19 @@ function drawBoardStones(context) {
 }
 function drawBoard() {
 	context.drawImage(backgroundCanvas, 0, 0);
-	drawBoardStones(context);
+	context.drawImage(stonesCanvas, 0, 0);
 }
+
+function update() {
+	drawBoard();
+	for (var i = animations.length - 1; i >= 0; i--) {
+		if (!animations[i]()) {
+			animations.splice(i, 1);
+		}
+	}
+	window.requestAnimationFrame(update);
+}
+window.requestAnimationFrame(update);
 
 function onClick(event) {
 	var mouseX = event.pageX - canvas.offsetLeft;
@@ -167,7 +184,7 @@ function playAt(row, col) {
 	} else {
 		board[row][col] = EMPTY;
 	}
-	drawBoard();
+	drawBoardStones(stonesCanvas.getContext("2d"));
 }
 
 function sweepBoard() {
@@ -249,7 +266,6 @@ function calculateGroups() {
 	return groups;
 }
 
-drawBoard(5);
 canvas.onclick = onClick;
 		</script>
 	</body>
