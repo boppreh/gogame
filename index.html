@@ -9,19 +9,33 @@
 		<canvas id="go-board" width=500 height=500>
 
 		<script>
-function drawBoard(size) {
-	var canvas = document.getElementById("go-board");
-	context = canvas.getContext("2d");
+"use strict";
+var EMPTY = "empty";
+var BLACK = "black";
+var WHITE = "white";
 
-	var padding = 10;
+var size = 5;
+var board = [];
 
-	context.lineWidth = 3;
-	var minSide = Math.min(canvas.width, canvas.height);
-	var cellSize = (minSide - 2 * padding) / size;
+for (var row = 0; row < size; row++) {
+	board.push([]);
+	for (var col = 0; col < size; col++) {
+		board[row][col] = EMPTY;
+	}
+}
 
-	context.fillStyle = "#CECECE";
+var stoneSizeRatio = 0.8 / 2;
+var canvas = document.getElementById("go-board");
+var context = canvas.getContext("2d");
+var minSide = Math.min(canvas.width, canvas.height);
+var padding = 10;
+var cellSize = (minSide - 2 * padding) / size;
+function drawBoard() {
+	context.save();
+	context.fillStyle = "#FFFFFF";
 	context.fillRect(0, 0, minSide, minSide);
 
+	context.lineWidth = 3;
 	context.strokeStyle = "#333333";
 	for (var i = padding + cellSize/2; i <= minSide - padding - cellSize/2; i += cellSize) {
 		context.beginPath();
@@ -31,9 +45,56 @@ function drawBoard(size) {
 		context.lineTo(i, minSide - padding - cellSize/2);
 		context.stroke();
 	}
+	context.restore();
+
+	context.save();
+	for (var row = 0; row < size; row++) {
+		for (var col = 0; col < size; col++) {
+			var stone = board[row][col];
+			if (stone == EMPTY) {
+				continue;
+			}
+
+			context.lineWidth = 1;
+			context.shadowColor = "#999";
+			context.shadowBlur = 5;
+			context.shadowOffsetX = 4;
+			context.shadowOffsetY = 4;
+
+			var x = padding + cellSize/2 + col * cellSize;
+			var y = padding + cellSize/2 + row * cellSize;
+			context.beginPath();
+			var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
+			if (stone == WHITE) {
+				context.strokeStyle = "#DDDDDD";
+				gradient.addColorStop(0, "#B0B0B0");
+				gradient.addColorStop(1, "#DDDDDD");
+			} else if (stone == BLACK) {
+				context.strokeStyle = "#222222";
+				gradient.addColorStop(0, "#222222");
+				gradient.addColorStop(1, "#333333");
+			}
+			
+			context.fillStyle = gradient;
+			context.arc(x, y, cellSize * stoneSizeRatio, 0, Math.PI*2);
+			context.stroke();
+			context.fill();
+		}
+	}
+	context.restore();
+}
+
+function onClick(event) {
+	var mouseX = event.pageX - canvas.offsetLeft;
+	var mouseY = event.pageY - canvas.offsetTop;
+	var col = Math.round((mouseX - padding - cellSize/2) / cellSize);
+	var row = Math.round((mouseY - padding - cellSize/2) / cellSize);
+	board[row][col] = Math.random() > 0.5 ? BLACK : WHITE;
+	drawBoard();
 }
 
 drawBoard(5);
+canvas.onclick = onClick;
 		</script>
 	</body>
 </html>
