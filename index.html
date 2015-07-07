@@ -187,8 +187,7 @@ function onClick(event) {
 		return;	
 	}
 	stone.type = turn;
-	//var removed = sweepBoard();
-	var removed = [];
+	var removed = sweepBoard(turn);
 	animatePlay(stone, removed);
 	turn = turn === BLACK ? WHITE : BLACK;
 }
@@ -229,27 +228,33 @@ function animateRemoval(stone) {
 	});
 }
 
-function sweepBoard() {
-	var groups = calculateGroups();
-	console.log(groups);
+function sweepBoard(turn) {
 	var removed = [];
-	for (var pos in groups) {
-		var group = groups[pos];
-		removed.push.apply(removed, group);
-		if (group.nLiberties === 0) {
-			removeGroup(group);
-		}		
-	}
+
+	calculateGroups();
+	calculateLiberties();
+	removeLockedGroups(turn == WHITE ? BLACK : WHITE, removed);
+
+	calculateGroups();
+	calculateLiberties();
+	removeLockedGroups(turn, removed);
+
 	return removed;
 }
 
-function removeGroup(group) {
-	for (var pos of group.stones) {
-		var row = pos[0];
-		var col = pos[1];
-		var stone = board[row][col];
-		stone.previously = stone.type;
-		stone.type = EMPTY;
+function removeLockedGroups(type, removed) {
+	for (var row = 0; row < size; row++) {
+		for (var col = 0; col < size; col++) {
+			var stone = getStone(row, col);
+			var group = stone.group;
+			if (stone.type == type && group.liberties === 0 && removed.indexOf(stone) == -1) {
+				for (var stone of group.members) {
+					removed.push(stone);
+					stone.previously = stone.type;
+					stone.type = EMPTY;
+				}
+			}
+		}
 	}
 }
 
@@ -261,56 +266,50 @@ function getStone(row, col) {
 }
 
 function calculateGroups() {
-	var groups = {};
-	function addLiberty(stonePos, libertyPos) {
-		var group = groups[stonePos];
-		if (group) {
-			group.liberties[libertyPos] = true;
+	var visited = {};
+	for (var row = 0; row < size; row++) {
+		for (var col = 0; col < size; col++) {
+			var type = getStone(row, col).type;
+			var group = {liberties: 0, members: []};
+			groupOne(row, col, type, group, visited);
+		}
+	}
+}
+
+function groupOne(row, col, type, group, visited) {
+	var stone = getStone(row, col);
+	if (visited[[row, col]] || stone.type != type) {
+		return;
+	}
+
+	stone.group = group;
+	visited[[row, col]] = true;
+	group.members.push(stone);
+
+	groupOne(row-1, col, type, group, visited);
+	groupOne(row+1, col, type, group, visited);
+	groupOne(row, col-1, type, group, visited);
+	groupOne(row, col+1, type, group, visited);
+}
+
+function calculateLiberties() {
+	function addLiberty(row, col) {
+		var stone = getStone(row, col);
+		if (stone.type != NOTHING) {
+			stone.group.liberties += 1;
 		}
 	}
 
 	for (var row = 0; row < size; row++) {
 		for (var col = 0; col < size; col++) {
-			var stone = getStone(row, col);
-			if (stone.type == EMPTY) {
-				continue;
-			}
-
-			var top = getStone(row-1, col);
-			var left = getStone(row, col-1);
-			// This is not right. What happens if a stone connects two
-			// existing groups?
-			if (stone.type === top.type) {
-				groups[stone] = groups[top];
-			} else if (stone.type === left.type) {
-				groups[stone] = groups[left];
-			} else {
-				var group = {};
-				group.liberties = {};
-				group.stones = [];
-				groups[[row, col]] = group;
-			}
-			groups[[row, col]].stones.push([row, col])
-		}
-	}
-
-	for (var row = 0; row < size; row++) {
-		for (var col = 0; col < size; col++) {
-			if (getStone(row, col) === EMPTY) {
-				addLiberty([row-1, col], [row, col]);
-				addLiberty([row+1, col], [row, col]);
-				addLiberty([row, col-1], [row, col]);
-				addLiberty([row, col+1], [row, col]);
+			if (getStone(row, col).type == EMPTY) {
+				addLiberty(row-1, col);
+				addLiberty(row+1, col);
+				addLiberty(row, col-1);
+				addLiberty(row, col+1);
 			}
 		}
 	}
-
-	for (var pos in groups) {
-		var group = groups[pos];
-		group.nLiberties = Object.keys(group.liberties).length;
-	}
-
-	return groups;
 }
 
 canvas.onclick = onClick;
