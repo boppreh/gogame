@@ -30,6 +30,12 @@ var context = canvas.getContext("2d");
 var minSide = Math.min(canvas.width, canvas.height);
 var padding = 10;
 var cellSize = (minSide - 2 * padding) / size;
+
+var boardBackgroundStreaks = [];
+for (var x = 0; x < minSide; ) {
+	x += Math.random() * minSide / 10;
+	boardBackgroundStreaks.push([x, x + (Math.random() - 1 + 0.5) * 1 * minSide / 30]);
+}
 function drawBoardBackground() {
 	context.save();
 	context.fillStyle = "#E2C58B";
@@ -42,11 +48,10 @@ function drawBoardBackground() {
 	context.shadowOffsetX = -3;
 	context.shadowOffsetY = 0;
 	context.beginPath();
-	for (var x = 0; x < minSide; ) {
-		x += Math.random() * minSide / 10;
-		context.moveTo(x, 0);
-		context.lineTo(x + (Math.random() - 1 + 0.5) * 1 * minSide / 30, minSide);
-	}
+	for (var x of boardBackgroundStreaks) {
+		context.moveTo(x[0], 0);
+		context.lineTo(x[1], minSide);
+	}	
 	context.stroke();
 	context.restore();
 }
