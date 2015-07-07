@@ -100,11 +100,14 @@ function drawBoardLines(context) {
 	context.restore();
 }
 function drawOneStone(context, row, col, x, y) {
-	context.save();
 	var stone = board[row][col];
 	if (stone == EMPTY) {
 		return;
 	}
+
+	context.save();
+	context.translate(x, y);
+	context.scale(stoneSizeRatio, stoneSizeRatio);
 
 	context.lineWidth = 1;
 	context.shadowColor = "rgba(30, 30, 30, 0.5)";
@@ -112,7 +115,7 @@ function drawOneStone(context, row, col, x, y) {
 	context.shadowOffsetX = 4;
 	context.shadowOffsetY = 4;
 
-	var gradient = context.createRadialGradient(x, y, cellSize * stoneSizeRatio, x - cellSize * 0.1, y - cellSize * 0.1, cellSize * stoneSizeRatio * 0.8);
+	var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
 	if (stone == WHITE) {
 		context.strokeStyle = "#DDDDDD";
 		gradient.addColorStop(0, "#B0B0B0");
@@ -125,7 +128,7 @@ function drawOneStone(context, row, col, x, y) {
 	context.fillStyle = gradient;
 
 	context.beginPath();
-	context.arc(x, y, cellSize * stoneSizeRatio, 0, Math.PI*2);
+	context.arc(0, 0, cellSize, 0, Math.PI*2);
 	context.stroke();
 	context.fill();
 
