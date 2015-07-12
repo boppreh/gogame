@@ -11,6 +11,25 @@
 		<script>
 "use strict";
 
+function ajaxPost(url, data, callback) {
+    var dataForm = new FormData();
+    for (var key in data) {
+    	dataForm.append(key, data[key]);
+    }
+    var r = new XMLHttpRequest();
+    r.open('POST', url, true);
+    r.onreadystatechange = function() {
+        if (r.readyState == XMLHttpRequest.DONE ) {
+           if (r.status == 200){
+           	callback(JSON.parse(r.responseText));
+           } else {
+              alert('There was an error ' + r.status)
+           }
+        }
+    }
+    r.send(data);
+}
+
 var EMPTY = "empty";
 var BLACK = "black";
 var WHITE = "white";
@@ -239,10 +258,11 @@ function Game(size) {
 
 	var board = [];
 	var turn = BLACK;
+	var locked = false;
 
 	function playAt(row, col) {
 		var stone = getStone(row, col);
-		if (stone.type != EMPTY) {
+		if (locked || stone.type != EMPTY) {
 			return null;
 		}
 		stone.type = turn;
@@ -351,12 +371,61 @@ function Game(size) {
 	return {
 		board: board,
 		playAt: playAt,
+		lock: function () {
+			locked = true;
+		},
+		unlock: function() {
+			locked = false;
+		}
+	}
+}
+
+function CosumiBot(Game) {
+	var nToA = "abcdefghijklmnopqrstuvwxyz"
+
+	var id = "";
+
+	ajaxPost("http://www.cosumi.net/play/id.cgi", {
+		m: game.size,
+		cm: 0,
+		c: "b",
+		f: "j",
+		dummy: (new Date).getTime(),
+	}, function (r) {
+		console.log(r);
+		if (r.error) {
+			alert("Failed to contact bot: " + r.error);
+		} else {
+			id = r.i;
+		}
+	});
+
+	function playAt(row, col) {
+		game.playAt(row, col);
+		game.lock();
+		ajaxPost("http://www.cosumi.net/play/move.cgi", {
+			m: nToA.charAt(col) + nToA.charAt(row),
+			r: "7",
+			cm: 0,
+			i: id,
+			dummy: (new Date).getTime(),
+		}, function(r) {
+			console.log(r);
+			var col = nToA.indexOf(r.m.charAt(0));
+			var row = nToA.indexOf(r.m.charAt(1));
+			game.unlock();
+			game.playAt(row, col);
+		});
+	}
+
+	return {
+		playAt: playAt,
 	}
 }
 
 var canvas = document.getElementById("go-board");
-var game = Game(19);
-var renderer = Renderer(19, canvas);
+var game = Game(6);
+var renderer = Renderer(6, canvas);
 
 function onClick(event) {
 	var pos = renderer.screenToBoard(event.pageX, event.pageY);
