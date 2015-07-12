@@ -154,11 +154,19 @@ function Renderer(size, canvas) {
 	}
 
 	function drawOneStone(context, type, x, y) {
-		if (type == EMPTY) {
-			return;
-		}
 		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 		context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
+	}
+	function annotateStone(context, type, liberties, x, y) {
+		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+		if (type == BLACK) {
+			context.fillStyle = "#CECECE";
+		} else {
+			context.fillStyle = "#232323";
+		}
+		context.fillText(liberties, x, y);
 	}
 	function drawBoardStones(context, board) {
 		context.save();
@@ -167,7 +175,11 @@ function Renderer(size, canvas) {
 			for (var col = 0; col < size; col++) {
 				var stone = board[row][col];
 				var pos = getStonePos(stone);
+				if (stone.type == EMPTY) {
+					continue;
+				}
 				drawOneStone(context, stone.type, pos.x, pos.y);
+				annotateStone(context, stone.type, stone.group.liberties, pos.x, pos.y);
 			}
 		}
 		context.restore();
@@ -361,9 +373,11 @@ function Game(size) {
 			for (var col = 0; col < size; col++) {
 				board[row][col] = {type: EMPTY,
 								   row: row,
-								   col: col};
+								   col: col,
+								   group: null};
 			}
 		}
+		calculateGroups();
 	}
 
 	initializeBoard();
@@ -423,9 +437,10 @@ function CosumiBot(Game) {
 	}
 }
 
+var size = 10;
 var canvas = document.getElementById("go-board");
-var game = Game(6);
-var renderer = Renderer(6, canvas);
+var game = Game(size);
+var renderer = Renderer(size, canvas);
 
 function onClick(event) {
 	var pos = renderer.screenToBoard(event.pageX, event.pageY);
