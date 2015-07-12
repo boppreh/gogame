@@ -157,20 +157,14 @@ function Renderer(size, canvas) {
 		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 		context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
 	}
-	function annotateStone(context, type, liberties, x, y) {
-		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
-		context.textAlign = "center";
-		context.textBaseline = "middle";
-		if (type == BLACK) {
-			context.fillStyle = "#CECECE";
-		} else {
-			context.fillStyle = "#232323";
-		}
-		context.fillText(liberties, x, y);
-	}
 	function drawBoardStones(context, board) {
 		context.save();
 		context.clearRect(0, 0, minSide, minSide);
+
+		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				var stone = board[row][col];
@@ -179,7 +173,9 @@ function Renderer(size, canvas) {
 					continue;
 				}
 				drawOneStone(context, stone.type, pos.x, pos.y);
-				annotateStone(context, stone.type, stone.group.liberties, pos.x, pos.y);
+
+				context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
+				context.fillText(stone.group.liberties, pos.x, pos.y);
 			}
 		}
 		context.restore();
