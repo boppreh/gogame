@@ -6,7 +6,7 @@
 	</head>
 
 	<body>
-		<canvas id="go-board" width=500 height=500>
+		<canvas id="go-board" width=800 height=800>
 
 		<script>
 "use strict";
@@ -28,6 +28,14 @@ function ajaxPost(url, data, callback) {
         }
     }
     r.send(data);
+}
+
+function getsize(object) {
+    var count = 0;
+    for (var i in object) {
+        count++;
+    }
+    return count;
 }
 
 var EMPTY = "empty";
@@ -175,7 +183,7 @@ function Renderer(size, canvas) {
 				drawOneStone(context, stone.type, pos.x, pos.y);
 
 				context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
-				context.fillText(stone.group.liberties, pos.x, pos.y);
+				context.fillText(getsize(stone.group.liberties), pos.x, pos.y);
 			}
 		}
 		context.restore();
@@ -298,7 +306,7 @@ function Game(size) {
 			for (var col = 0; col < size; col++) {
 				var stone = getStone(row, col);
 				var group = stone.group;
-				if (stone.type == type && group.liberties === 0 && removed.indexOf(stone) == -1) {
+				if (stone.type == type && getsize(group.liberties) === 0 && removed.indexOf(stone) == -1) {
 					for (var stone of group.members) {
 						removed.push(stone);
 						stone.previously = stone.type;
@@ -321,7 +329,7 @@ function Game(size) {
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				var type = getStone(row, col).type;
-				var group = {liberties: 0, members: []};
+                var group = {liberties: {}, members: []};
 				groupOne(row, col, type, group, visited);
 			}
 		}
@@ -344,20 +352,20 @@ function Game(size) {
 	}
 
 	function calculateLiberties() {
-		function addLiberty(row, col) {
+		function addLiberty(liberty_row, liberty_col, row, col) {
 			var stone = getStone(row, col);
 			if (stone.type != NOTHING) {
-				stone.group.liberties += 1;
+                stone.group.liberties[liberty_row + " " + liberty_col] = true;
 			}
 		}
 
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				if (getStone(row, col).type == EMPTY) {
-					addLiberty(row-1, col);
-					addLiberty(row+1, col);
-					addLiberty(row, col-1);
-					addLiberty(row, col+1);
+					addLiberty(row, col, row-1, col);
+					addLiberty(row, col, row+1, col);
+					addLiberty(row, col, row, col-1);
+					addLiberty(row, col, row, col+1);
 				}
 			}
 		}
@@ -433,7 +441,7 @@ function CosumiBot(Game) {
 	}
 }
 
-var size = 10;
+var size = 5;
 var canvas = document.getElementById("go-board");
 var game = Game(size);
 var renderer = Renderer(size, canvas);
