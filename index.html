@@ -38,6 +38,7 @@ function getsize(object) {
     return count;
 }
 
+
 var EMPTY = "empty";
 var BLACK = "black";
 var WHITE = "white";
@@ -276,13 +277,33 @@ function Game(size) {
 	var turn = BLACK;
 	var locked = false;
 
+    function cloneBoard() {
+        var clone = [];
+		for (var row = 0; row < size; row++) {
+			clone.push([]);
+			for (var col = 0; col < size; col++) {
+				clone[row][col] = board[row][col];
+			}
+		}
+        return clone;
+    }
+
 	function playAt(row, col) {
+        var oldBoard = cloneBoard();
+
 		var stone = getStone(row, col);
 		if (locked || stone.type != EMPTY) {
 			return null;
 		}
 		stone.type = turn;
 		var removed = sweepBoard(turn);
+
+        var suicide = removed.indexOf(stone) != -1;
+        if (suicide) {
+            board = oldBoard;
+            return null;
+        }
+
 		turn = turn === BLACK ? WHITE : BLACK;
 		return {stone: stone, removed: removed}
 	}
