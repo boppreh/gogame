@@ -161,6 +161,8 @@ function Renderer(size, canvas) {
 
 				if (stone.group.nLiberties == 1)
 					context.fillStyle = stone.type == BLACK ? "#BB4444" : "#660505";
+				else if (stone.group.nEyes >= 2)
+					context.fillStyle = stone.type == BLACK ? "#D4AF37" : "#DAA520";
 				else
 					context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
 				context.fillText(stone.group.nLiberties, pos.x, pos.y);
@@ -297,6 +299,8 @@ function Game(size) {
 		calculateLiberties();
 		removeLockedGroups(turn, removed);
 
+		calculateEyes();
+
 		return removed;
 	}
 
@@ -328,7 +332,7 @@ function Game(size) {
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				var type = getStone(row, col).type;
-				var group = {nLiberties: 0, liberties: {}, members: []};
+				var group = {nEyes: 0, nLiberties: 0, liberties: {}, members: []};
 				groupOne(row, col, type, group, visited);
 			}
 		}
@@ -366,6 +370,32 @@ function Game(size) {
 					addLiberty(row, col, row+1, col);
 					addLiberty(row, col, row, col-1);
 					addLiberty(row, col, row, col+1);
+				}
+			}
+		}
+	}
+
+	function calculateEyes() {
+		function addTypeGroup(row, col, types, groups) {
+			var stone = getStone(row, col);
+			types[stone.type] = 1;
+			if (stone.group && groups.indexOf(stone.group) === -1)
+				groups.push(stone.group)
+		}
+
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				if (getStone(row, col).type == EMPTY) {
+					var types = {};
+					var groups = []
+					addTypeGroup(row, col-1, types, groups);
+					addTypeGroup(row, col+1, types, groups);
+					addTypeGroup(row-1, col, types, groups);
+					addTypeGroup(row+1, col, types, groups);
+					if (types[EMPTY] || (types[WHITE] && types[BLACK])) continue;
+					console.log(groups)
+					if (groups.length === 1) groups[0].nEyes++;
+					console.log(groups[0].nEyes)
 				}
 			}
 		}
