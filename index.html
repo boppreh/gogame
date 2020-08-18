@@ -160,7 +160,7 @@ function Renderer(size, canvas) {
 				drawOneStone(context, stone.type, pos);
 
 				if (stone.group.nLiberties == 1)
-					context.fillStyle = stone.type == BLACK ? "#BB4444" : "#660505";
+					context.fillStyle = stone.type == BLACK ? "#BB4444" : "#A64545";
 				else if (stone.group.nEyes >= 2)
 					context.fillStyle = stone.type == BLACK ? "#D4AF37" : "#DAA520";
 				else
