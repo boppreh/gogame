@@ -6,38 +6,10 @@
 	</head>
 
 	<body>
-		<canvas id="go-board" width=800 height=800>
+		<canvas id="go-board" width=800 height=800 />
 
 		<script>
 "use strict";
-
-function ajaxPost(url, data, callback) {
-    var dataForm = new FormData();
-    for (var key in data) {
-    	dataForm.append(key, data[key]);
-    }
-    var r = new XMLHttpRequest();
-    r.open('POST', url, true);
-    r.onreadystatechange = function() {
-        if (r.readyState == XMLHttpRequest.DONE ) {
-           if (r.status == 200){
-           	callback(JSON.parse(r.responseText));
-           } else {
-              alert('There was an error ' + r.status)
-           }
-        }
-    }
-    r.send(data);
-}
-
-function getsize(object) {
-    var count = 0;
-    for (var i in object) {
-        count++;
-    }
-    return count;
-}
-
 
 var EMPTY = "empty";
 var BLACK = "black";
@@ -162,9 +134,12 @@ function Renderer(size, canvas) {
 		context.restore();
 	}
 
-	function drawOneStone(context, type, x, y) {
+	function drawOneStone(context, type, x, y, transparency) {
 		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+        context.save()
+        context.globalAlpha = transparency || 1;
 		context.drawImage(cachedCanvas, x - cachedCanvas.width / 2, y - cachedCanvas.height / 2);
+        context.restore();
 	}
 	function drawBoardStones(context, board) {
 		context.save();
@@ -184,14 +159,14 @@ function Renderer(size, canvas) {
 				drawOneStone(context, stone.type, pos.x, pos.y);
 
 				context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
-				context.fillText(getsize(stone.group.liberties), pos.x, pos.y);
+				context.fillText(stone.group.n_liberties, pos.x, pos.y);
 			}
 		}
 		context.restore();
 	}
-	function translateRowCol(row, col) {
-		var wiggleX = (2 * Math.random() - 1) * cellSize * 0.05;
-		var wiggleY = (2 * Math.random() - 1) * cellSize * 0.05;
+	function translateRowCol(row, col, deterministic) {
+		var wiggleX = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
+		var wiggleY = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
 		var x = padding + cellSize/2 + col * cellSize + wiggleX;
 		var y = padding + cellSize/2 + row * cellSize + wiggleY;
 		return {x: x, y: y};
@@ -267,6 +242,7 @@ function Renderer(size, canvas) {
 		screenToBoard: screenToBoard,
 		update: update,
 		animatePlay: animatePlay,
+        drawGhost: function(type, row, col) { var pos = translateRowCol(row, col, true); drawOneStone(context, type, pos.x, pos.y, 0.3); },
 	}
 }
 
@@ -327,7 +303,7 @@ function Game(size) {
 			for (var col = 0; col < size; col++) {
 				var stone = getStone(row, col);
 				var group = stone.group;
-				if (stone.type == type && getsize(group.liberties) === 0 && removed.indexOf(stone) == -1) {
+				if (stone.type == type && group.n_liberties === 0 && removed.indexOf(stone) == -1) {
 					for (var stone of group.members) {
 						removed.push(stone);
 						stone.previously = stone.type;
@@ -350,7 +326,7 @@ function Game(size) {
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
 				var type = getStone(row, col).type;
-                var group = {liberties: {}, members: []};
+                var group = {n_liberties: 0, liberties: {}, members: []};
 				groupOne(row, col, type, group, visited);
 			}
 		}
@@ -377,6 +353,7 @@ function Game(size) {
 			var stone = getStone(row, col);
 			if (stone.type != NOTHING) {
                 stone.group.liberties[liberty_row + " " + liberty_col] = true;
+                stone.group.n_liberties = Object.keys(stone.group.liberties).length;
 			}
 		}
 
@@ -410,6 +387,8 @@ function Game(size) {
 	return {
 		board: board,
 		playAt: playAt,
+        getStone: getStone,
+        getTurn: function() { return turn; },
 		lock: function () {
 			locked = true;
 		},
@@ -420,6 +399,25 @@ function Game(size) {
 }
 
 function CosumiBot(Game) {
+    function ajaxPost(url, data, callback) {
+        var dataForm = new FormData();
+        for (var key in data) {
+            dataForm.append(key, data[key]);
+        }
+        var r = new XMLHttpRequest();
+        r.open('POST', url, true);
+        r.onreadystatechange = function() {
+            if (r.readyState == XMLHttpRequest.DONE ) {
+               if (r.status == 200){
+                callback(JSON.parse(r.responseText));
+               } else {
+                  alert('There was an error ' + r.status)
+               }
+            }
+        }
+        r.send(data);
+    }
+
 	var nToA = "abcdefghijklmnopqrstuvwxyz"
 
 	var id = "";
@@ -466,18 +464,29 @@ var size = 5;
 var canvas = document.getElementById("go-board");
 var game = Game(size);
 var renderer = Renderer(size, canvas);
+var hovering = [-1, -1];
 
-function onClick(event) {
-	var pos = renderer.screenToBoard(event.pageX, event.pageY);
-	var play = game.playAt(pos[0], pos[1]);
-	if (play) {
-		renderer.animatePlay(play.stone, play.removed, game.board);
-	}
-}
-canvas.onclick = onClick;
+canvas.onclick = function(event) {
+    var pos = renderer.screenToBoard(event.pageX, event.pageY);
+    var play = game.playAt(pos[0], pos[1]);
+    if (play) {
+        renderer.animatePlay(play.stone, play.removed, game.board);
+    }
+};
+canvas.onmousemove = function(event) {
+    var pos = renderer.screenToBoard(event.pageX, event.pageY);
+    if (hovering[0] != pos[0] || hovering[1] != pos[1]) {
+        renderer.update();
+        hovering = pos;
+    }
+};
 
 function update() {
 	renderer.update();
+    var stone = game.getStone(hovering[0], hovering[1]);
+    if (stone.type == EMPTY) {
+        renderer.drawGhost(game.getTurn(), hovering[0], hovering[1]);
+    }
 	window.requestAnimationFrame(update);
 }
 window.requestAnimationFrame(update);
