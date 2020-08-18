@@ -134,7 +134,6 @@ function Renderer(size, canvas) {
 
 		context.restore();
 	}
-
 	function drawOneStone(context, type, canvasPos, transparency) {
 		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 		context.save()
@@ -149,6 +148,37 @@ function Renderer(size, canvas) {
 		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
 		context.textAlign = "center";
 		context.textBaseline = "middle";
+
+		context.save();
+		context.globalAlpha = 1;
+		context.lineWidth = Math.max(4, 8 * cellSize / 100);
+		context.strokeStyle = "#000000";
+		context.shadowColor = "rgba(10, 10, 10, 0.3)";
+		context.shadowBlur = 1;
+		context.shadowOffsetX = 1;
+		context.shadowOffsetY = 1;
+		context.beginPath();
+		for (var row = 0; row < size; row++) {
+			for (var col = 0; col < size; col++) {
+				var stone = board[row][col]
+				if (stone.type == EMPTY) continue;
+				var stonePos = translateRowCol(stone, true)
+
+				if (col > 0 && stone.type == board[row][col-1].type) {
+					var neighborPos = translateRowCol(board[row][col-1], true);
+					context.moveTo(stonePos.x, stonePos.y);
+					context.lineTo(neighborPos.x, neighborPos.y)
+				}
+				if (row > 0 && stone.type == board[row-1][col].type) {
+					var neighborPos = translateRowCol(board[row-1][col], true);
+					context.moveTo(stonePos.x, stonePos.y);
+					context.lineTo(neighborPos.x, neighborPos.y)
+				}
+
+			}
+		}
+		context.stroke();
+		context.restore();
 
 		for (var row = 0; row < size; row++) {
 			for (var col = 0; col < size; col++) {
@@ -393,9 +423,7 @@ function Game(size) {
 					addTypeGroup(row-1, col, types, groups);
 					addTypeGroup(row+1, col, types, groups);
 					if (types[EMPTY] || (types[WHITE] && types[BLACK])) continue;
-					console.log(groups)
 					if (groups.length === 1) groups[0].nEyes++;
-					console.log(groups[0].nEyes)
 				}
 			}
 		}
