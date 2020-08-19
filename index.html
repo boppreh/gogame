@@ -150,8 +150,8 @@ function Renderer(size, canvas) {
 		context.textBaseline = "middle";
 
 		context.save();
-		context.globalAlpha = 1;
-		context.lineWidth = Math.max(4, 8 * cellSize / 100);
+		context.globalAlpha = 0.5;
+		context.lineWidth = Math.max(15, cellSize * 0.15);
 		context.strokeStyle = "#000000";
 		context.shadowColor = "rgba(10, 10, 10, 0.3)";
 		context.shadowBlur = 1;
@@ -229,7 +229,7 @@ function Renderer(size, canvas) {
 		}
 	}
 
-	function animatePlay(stone, removed, board) {
+	function animatePlay(stone, removed, board, callback) {
 		var step = 0;
 		var direction = stone.type == WHITE ? -1 : 1;
 		animations.push(function() {
@@ -246,6 +246,7 @@ function Renderer(size, canvas) {
 					animateRemoval(removedStone);
 				}
 				drawBoardStones(stonesCanvas.getContext("2d"), board);
+				callback && callback();
 				return false;
 			}
 		});
@@ -285,7 +286,6 @@ function Game(size) {
 
 	var board = [];
 	var turn = BLACK;
-	var locked = false;
 
 	function cloneBoard() {
 		var clone = [];
@@ -302,7 +302,7 @@ function Game(size) {
 		var oldBoard = cloneBoard();
 
 		var stone = getStone(boardPos.row, boardPos.col);
-		if (locked || stone.type != EMPTY) {
+		if (stone.type != EMPTY) {
 			return null;
 		}
 		stone.type = turn;
@@ -449,16 +449,10 @@ function Game(size) {
 		playAt: playAt,
 		getStoneType: function(pos) { return getStone(pos.row, pos.col).type; },
 		getTurn: function() { return turn; },
-		lock: function () {
-			locked = true;
-		},
-		unlock: function() {
-			locked = false;
-		}
 	}
 }
 
-function CosumiBot(Game) {
+function CosumiBot(game) {
 	function ajaxPost(url, data, callback) {
 		var dataForm = new FormData();
 		for (var key in data) {
@@ -520,17 +514,45 @@ function CosumiBot(Game) {
 	}
 }
 
+function StupidBot(game) {
+	return {
+		playAt: function(pos) {
+			for (var i = 0; i < 100; i++) {
+				var row = Math.floor(Math.random() * game.board.length);
+				var col = Math.floor(Math.random() * game.board.length);
+				var play = game.playAt({row: row, col: col});
+				console.log(row, col);
+				if (play) {
+					return play;
+				}
+			}
+			return null;
+		},
+	}
+}
+
 var size = 5;
 var canvas = document.getElementById("go-board");
 var game = Game(size);
+game.locked = false;
+var bot = StupidBot(game);
 var renderer = Renderer(size, canvas);
 var hovering = {row: -1, col: -1};
 
 canvas.onclick = function(event) {
+	if (game.locked) return;
 	var pos = renderer.screenToBoard(event.pageX, event.pageY);
 	var play = game.playAt(pos);
 	if (play) {
-		renderer.animatePlay(play.stone, play.removed, game.board);
+		game.locked = true;
+		renderer.animatePlay(play.stone, play.removed, game.board, function() {
+			var botPlay = bot.playAt(pos);
+			if (botPlay) {
+				renderer.animatePlay(botPlay.stone, botPlay.removed, game.board, function() { game.locked = false });
+			} else {
+				alert("The bot gave up!");
+			}
+		});
 	}
 };
 canvas.onmousemove = function(event) {
