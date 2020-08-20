@@ -546,13 +546,14 @@ canvas.onclick = function(event) {
 	if (play) {
 		game.locked = true;
 		renderer.animatePlay(play.stone, play.removed, game.board, function() {
+			setTimeout(function() {
 			var botPlay = bot.playAt(pos);
 			if (botPlay) {
 				renderer.animatePlay(botPlay.stone, botPlay.removed, game.board, function() { game.locked = false });
 			} else {
 				alert("The bot gave up!");
 			}
-		});
+		}, 700 + Math.random()*200)});
 	}
 };
 canvas.onmousemove = function(event) {
