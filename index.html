@@ -533,6 +533,8 @@ function StupidBot(game) {
 
 var size = 5;
 var canvas = document.getElementById("go-board");
+canvas.height = window.innerHeight - 50;
+canvas.width = window.innerWidth - 50;
 var game = Game(size);
 game.locked = false;
 var bot = StupidBot(game);
