@@ -213,6 +213,8 @@ function Renderer(size, canvas) {
 	drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
 
 	function drawBoard() {
+		context.fillStyle = '#FFFFFF'
+		context.fillRect(0, 0, canvas.width, canvas.height);
 		context.drawImage(cachedBackgroundCanvas, 0, 0);
 		context.drawImage(stonesCanvas, 0, 0);
 	}
