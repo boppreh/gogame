@@ -281,7 +281,9 @@ function Renderer(size, canvas) {
 	}
 }
 
-function State(baseBoard, size, turn) {
+function State(baseBoard, size, turn, history) {
+	history = history || []
+
 	let board = [];
 	for (let row = 0; row < size; row++) {
 		board.push([]);
@@ -299,7 +301,7 @@ function State(baseBoard, size, turn) {
 	let recentlyRemoved = []
 
 	function playAt(pos) {
-		let clone = State(board, size, turn === BLACK ? WHITE : BLACK);
+		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history);
 
 		let stone = clone.getStoneAtPos(pos);
 		if (stone.type != EMPTY) {
@@ -309,11 +311,24 @@ function State(baseBoard, size, turn) {
 		stone.type = turn;
 		clone.sweepBoard();
 		let suicide = clone.recentlyRemoved.indexOf(stone) != -1;
-		if (suicide) {
+		let string = clone.asString();
+		if (history.indexOf(string) >= 0) console.log('forbidden by Ko rule')
+		if (suicide || history.indexOf(string) >= 0) {
 			return null;
 		}
+		history.push(string);
 
 		return clone
+	}
+
+	function asString() {
+		let stoneTypes = [];
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
+				stoneTypes.push(board[row][col].type);
+			}
+		}
+		return stoneTypes.join(" ")
 	}
 
 	function sweepBoard() {
@@ -402,6 +417,7 @@ function State(baseBoard, size, turn) {
 	}
 
 	return {
+		asString: asString,
 		board: board,
 		playAt: playAt,
 		turn: turn,
@@ -425,10 +441,8 @@ canvas.onclick = function(event) {
 	let pos = renderer.screenToBoard(event.pageX, event.pageY);
 	let newState = state.playAt(pos);
 	if (newState) {
-		//renderer.animatePlay(state.turn, pos, newState.recentlyRemoved, newState.board);
-		//return
 		renderer.animatePlay(BLACK, pos, newState.recentlyRemoved, newState.board, function() {
-			state = newState
+			state = newState;
 			setTimeout(function() {
 				let emptyPos = [];
 				for (let row = 0; row < size; row++) {
