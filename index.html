@@ -11,37 +11,37 @@
 		<script>
 "use strict";
 
-var EMPTY = "empty";
-var BLACK = "black";
-var WHITE = "white";
-var NOTHING = "nothing";
+let EMPTY = "empty";
+let BLACK = "black";
+let WHITE = "white";
+let NOTHING = "nothing";
 
 function Renderer(size, canvas) {
-	var stoneSizeRatio = 0.8 / 2;
-	var context = canvas.getContext("2d");
-	var minSide = Math.min(canvas.width, canvas.height);
-	var padding = 10;
-	var cellSize = (minSide - 2 * padding) / size;
+	let stoneSizeRatio = 0.8 / 2;
+	let context = canvas.getContext("2d");
+	let minSide = Math.min(canvas.width, canvas.height);
+	let padding = 10;
+	let cellSize = (minSide - 2 * padding) / size;
 
-	var animations = [];
+	let animations = [];
 
-	var cachedBackgroundCanvas = document.createElement("canvas");
+	let cachedBackgroundCanvas = document.createElement("canvas");
 	cachedBackgroundCanvas.width = minSide;
 	cachedBackgroundCanvas.height = minSide;
-	var cachedBlackStoneCanvas = document.createElement("canvas");
+	let cachedBlackStoneCanvas = document.createElement("canvas");
 	cachedBlackStoneCanvas.width = cellSize;
 	cachedBlackStoneCanvas.height = cellSize;
-	var cachedWhiteStoneCanvas = document.createElement("canvas");
+	let cachedWhiteStoneCanvas = document.createElement("canvas");
 	cachedWhiteStoneCanvas.width = cellSize;
 	cachedWhiteStoneCanvas.height = cellSize;
 
-	var stonesCanvas = document.createElement("canvas");
+	let stonesCanvas = document.createElement("canvas");
 	stonesCanvas.width = minSide;
 	stonesCanvas.height = minSide;
 
-	var stonesPos = {};
+	let stonesPos = {};
 	function getStonePos(stone) {
-		var id = [stone.row, stone.col, stone.type];
+		let id = [stone.row, stone.col, stone.type];
 		if (!stonesPos[id]) {
 			// Caching is necessary because translateRowCol has random components.
 			stonesPos[id] = translateRowCol(stone);
@@ -62,8 +62,8 @@ function Renderer(size, canvas) {
 		context.shadowOffsetX = -3;
 		context.shadowOffsetY = 0;
 		context.beginPath();
-		var boardBackgroundStreaks = [];
-		for (var x = 0; x < minSide; ) {
+		let boardBackgroundStreaks = [];
+		for (let x = 0; x < minSide; ) {
 			x += Math.random() * minSide / 10;
 			context.moveTo(x, 0);
 			context.lineTo(x + (2 * Math.random() - 1) * 1 * minSide / 30, minSide);
@@ -72,7 +72,7 @@ function Renderer(size, canvas) {
 
 		drawBoardLines(context);
 
-		var gradient = context.createLinearGradient(0, 0, minSide, 0);
+		let gradient = context.createLinearGradient(0, 0, minSide, 0);
 		gradient.addColorStop(0.00, "rgba(0, 0, 0, 0.05)");
 		gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.02)");
 		gradient.addColorStop(0.50, "rgba(0, 0, 0, 0.09)");
@@ -92,10 +92,10 @@ function Renderer(size, canvas) {
 		context.shadowBlur = 1;
 		context.shadowOffsetX = 1;
 		context.shadowOffsetY = 1;
-		var offset = padding + cellSize/2;
+		let offset = padding + cellSize/2;
 		context.translate(offset, offset);
 		context.beginPath();
-		for (var i = 0; i < size; i++) {
+		for (let i = 0; i < size; i++) {
 			context.moveTo(0, i * cellSize);
 			context.lineTo(minSide - offset * 2, i * cellSize);
 			context.moveTo(i * cellSize, 0);
@@ -115,7 +115,7 @@ function Renderer(size, canvas) {
 		context.shadowOffsetX = 4 * cellSize / 100;
 		context.shadowOffsetY = 4 * cellSize / 100;
 
-		var gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
+		let gradient = context.createRadialGradient(0, 0, cellSize, -cellSize * 0.1, -cellSize * 0.1, cellSize * 0.8);
 		if (type == WHITE) {
 			context.strokeStyle = "#DDDDDD";
 			gradient.addColorStop(0, "#B0B0B0");
@@ -135,7 +135,7 @@ function Renderer(size, canvas) {
 		context.restore();
 	}
 	function drawOneStone(context, type, canvasPos, transparency) {
-		var cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+		let cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
 		context.save()
 		context.globalAlpha = transparency || 1;
 		context.drawImage(cachedCanvas, canvasPos.x - cachedCanvas.width / 2, canvasPos.y - cachedCanvas.height / 2);
@@ -158,19 +158,19 @@ function Renderer(size, canvas) {
 		context.shadowOffsetX = 1;
 		context.shadowOffsetY = 1;
 		context.beginPath();
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
-				var stone = board[row][col]
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
+				let stone = board[row][col]
 				if (stone.type == EMPTY) continue;
-				var stonePos = translateRowCol(stone, true)
+				let stonePos = translateRowCol(stone, true)
 
 				if (col > 0 && stone.type == board[row][col-1].type) {
-					var neighborPos = translateRowCol(board[row][col-1], true);
+					let neighborPos = translateRowCol(board[row][col-1], true);
 					context.moveTo(stonePos.x, stonePos.y);
 					context.lineTo(neighborPos.x, neighborPos.y)
 				}
 				if (row > 0 && stone.type == board[row-1][col].type) {
-					var neighborPos = translateRowCol(board[row-1][col], true);
+					let neighborPos = translateRowCol(board[row-1][col], true);
 					context.moveTo(stonePos.x, stonePos.y);
 					context.lineTo(neighborPos.x, neighborPos.y)
 				}
@@ -180,10 +180,10 @@ function Renderer(size, canvas) {
 		context.stroke();
 		context.restore();
 
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
-				var stone = board[row][col];
-				var pos = getStonePos(stone);
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
+				let stone = board[row][col];
+				let pos = getStonePos(stone);
 				if (stone.type == EMPTY) {
 					continue;
 				}
@@ -201,10 +201,10 @@ function Renderer(size, canvas) {
 		context.restore();
 	}
 	function translateRowCol(boardPos, deterministic) {
-		var wiggleX = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
-		var wiggleY = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
-		var x = padding + cellSize/2 + boardPos.col * cellSize + wiggleX;
-		var y = padding + cellSize/2 + boardPos.row * cellSize + wiggleY;
+		let wiggleX = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
+		let wiggleY = (deterministic ? 0 : 2 * Math.random() - 1) * cellSize * 0.05;
+		let x = padding + cellSize/2 + boardPos.col * cellSize + wiggleX;
+		let y = padding + cellSize/2 + boardPos.row * cellSize + wiggleY;
 		return {x: x, y: y};
 	}
 
@@ -219,9 +219,9 @@ function Renderer(size, canvas) {
 
 	function update() {
 		drawBoard();
-		for (var i = animations.length - 1; i >= 0; i--) {
+		for (let i = animations.length - 1; i >= 0; i--) {
 			context.save();
-			var shouldContinue = animations[i]();
+			let shouldContinue = animations[i]();
 			context.restore();
 			if (!shouldContinue) {
 				animations.splice(i, 1);
@@ -229,20 +229,20 @@ function Renderer(size, canvas) {
 		}
 	}
 
-	function animatePlay(stone, removed, board, callback) {
-		var step = 0;
-		var direction = stone.type == WHITE ? -1 : 1;
+	function animatePlay(type, boardPos, removed, board, callback) {
+		let step = 0;
+		let direction = type == WHITE ? -1 : 1;
 		animations.push(function() {
 			context.globalAlpha = step;
-			var pos = getStonePos(stone);
+			let pos = getStonePos(boardPos);
 			context.translate(pos.x, pos.y + (1 - step) * cellSize * direction * 2);
 			context.scale(1.5 - step/2, 1.5 - step/2);
-			drawOneStone(context, stone.type, {x: 0, y: 0});
+			drawOneStone(context, type, {x: 0, y: 0});
 			step += 0.1;
 			if (step <= 1) {
 				return true;
 			} else {
-				for (var removedStone of removed) {
+				for (let removedStone of removed) {
 					animateRemoval(removedStone);
 				}
 				drawBoardStones(stonesCanvas.getContext("2d"), board);
@@ -253,14 +253,14 @@ function Renderer(size, canvas) {
 	}
 
 	function animateRemoval(stone) {
-		var step = 0;
+		let step = 0;
 		animations.push(function() {
 			step += 0.1;
 			if (step > 1) {
 				return false;
 			}
 			context.globalAlpha = 1 - step;
-			var pos = getStonePos(stone);
+			let pos = getStonePos(stone);
 			context.translate(pos.x, pos.y);
 			context.scale(1 + step/3, 1 + step/3);
 			drawOneStone(context, stone.previously, {x: 0, y: 0});
@@ -277,74 +277,94 @@ function Renderer(size, canvas) {
 		screenToBoard: screenToBoard,
 		update: update,
 		animatePlay: animatePlay,
-		drawGhost: function(type, boardPos) { var pos = translateRowCol(boardPos, true); drawOneStone(context, type, pos, 0.3); },
+		drawGhost: function(type, boardPos) { let pos = translateRowCol(boardPos, true); drawOneStone(context, type, pos, 0.3); },
 	}
 }
 
-function Game(size) {
-	size = size || 5;
-
-	var board = [];
-	var turn = BLACK;
-
-	function cloneBoard() {
-		var clone = [];
-		for (var row = 0; row < size; row++) {
-			clone.push([]);
-			for (var col = 0; col < size; col++) {
-				clone[row][col] = board[row][col];
+function State(baseBoard, size, turn) {
+	let board = [];
+	for (let row = 0; row < size; row++) {
+		board.push([]);
+		for (let col = 0; col < size; col++) {
+			board[row][col] = {type: baseBoard ? baseBoard[row][col].type : EMPTY, row: row, col: col, group: {nEyes: 0, nLiberties: 0, liberties: {}, members: []}};
+		}
+	}
+	if (baseBoard) {
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
 			}
 		}
-		return clone;
 	}
 
-	function playAt(boardPos) {
-		var oldBoard = cloneBoard();
+	let recentlyRemoved = []
 
-		var stone = getStone(boardPos.row, boardPos.col);
+	function playAt(pos) {
+		let clone = State(board, size, turn === BLACK ? WHITE : BLACK);
+
+		let stone = clone.getStoneAtPos(pos);
 		if (stone.type != EMPTY) {
 			return null;
 		}
-		stone.type = turn;
-		var removed = sweepBoard(turn);
 
-		var suicide = removed.indexOf(stone) != -1;
+		stone.type = turn;
+		clone.sweepBoard();
+		let suicide = clone.recentlyRemoved.indexOf(stone) != -1;
 		if (suicide) {
-			board = oldBoard;
 			return null;
 		}
 
-		turn = turn === BLACK ? WHITE : BLACK;
-		return {stone: stone, removed: removed}
+		return clone
 	}
 
-	function sweepBoard(turn) {
-		var removed = [];
+	function sweepBoard() {
+		calculateGroups();
+		removeLockedGroups(turn);
 
 		calculateGroups();
-		calculateLiberties();
-		removeLockedGroups(turn == WHITE ? BLACK : WHITE, removed);
+		removeLockedGroups(turn == WHITE ? BLACK : WHITE);
 
-		calculateGroups();
-		calculateLiberties();
-		removeLockedGroups(turn, removed);
-
+		calculateGroups()
 		calculateEyes();
-
-		return removed;
 	}
 
-	function removeLockedGroups(type, removed) {
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
-				var stone = getStone(row, col);
-				var group = stone.group;
-				if (stone.type == type && group.nLiberties === 0 && removed.indexOf(stone) == -1) {
-					for (var stone of group.members) {
-						removed.push(stone);
-						stone.previously = stone.type;
-						stone.type = EMPTY;
-					}
+	function calculateGroups() {
+		let visited = {};
+		function followGroup(stone, baseStone) {
+			let pos = [stone.row, stone.col];
+			if (stone.type === NOTHING || visited[pos]) return;
+
+			if (stone.type === baseStone.type) {
+				visited[pos] = true;
+				stone.group = baseStone.group;
+				stone.group.members.push(pos);
+				followGroup(getStone(pos[0], pos[1]+1), baseStone);
+				followGroup(getStone(pos[0], pos[1]-1), baseStone);
+				followGroup(getStone(pos[0]+1, pos[1]), baseStone);
+				followGroup(getStone(pos[0]-1, pos[1]), baseStone);
+			} else if (stone.type === EMPTY && !baseStone.group.liberties[pos]) {
+				baseStone.group.liberties[pos] = true;
+				baseStone.group.nLiberties++;
+			}
+		}
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
+				let pos = [row, col];
+				if (visited[pos]) continue;
+				let stone = getStone(row, col);
+				if (stone.type == EMPTY) continue;
+				followGroup(stone, stone);
+			}
+		}
+	}
+
+	function removeLockedGroups(type) {
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
+				let stone = getStone(row, col);
+				if (stone.type === type && stone.group.nLiberties === 0) {
+					stone.previously = stone.type;
+					stone.type = EMPTY;
+					recentlyRemoved.push(stone);
 				}
 			}
 		}
@@ -357,67 +377,19 @@ function Game(size) {
 		return board[row][col];
 	}
 
-	function calculateGroups() {
-		var visited = {};
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
-				var type = getStone(row, col).type;
-				var group = {nEyes: 0, nLiberties: 0, liberties: {}, members: []};
-				groupOne(row, col, type, group, visited);
-			}
-		}
-	}
-
-	function groupOne(row, col, type, group, visited) {
-		var stone = getStone(row, col);
-		if (visited[[row, col]] || stone.type != type) {
-			return;
-		}
-
-		stone.group = group;
-		visited[[row, col]] = true;
-		group.members.push(stone);
-
-		groupOne(row-1, col, type, group, visited);
-		groupOne(row+1, col, type, group, visited);
-		groupOne(row, col-1, type, group, visited);
-		groupOne(row, col+1, type, group, visited);
-	}
-
-	function calculateLiberties() {
-		function addLiberty(libertyRow, libertyCol, row, col) {
-			var stone = getStone(row, col);
-			if (stone.type != NOTHING) {
-				stone.group.liberties[libertyRow + " " + libertyCol] = true;
-				stone.group.nLiberties = Object.keys(stone.group.liberties).length;
-			}
-		}
-
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
-				if (getStone(row, col).type == EMPTY) {
-					addLiberty(row, col, row-1, col);
-					addLiberty(row, col, row+1, col);
-					addLiberty(row, col, row, col-1);
-					addLiberty(row, col, row, col+1);
-				}
-			}
-		}
-	}
-
 	function calculateEyes() {
 		function addTypeGroup(row, col, types, groups) {
-			var stone = getStone(row, col);
+			let stone = getStone(row, col);
 			types[stone.type] = 1;
 			if (stone.group && groups.indexOf(stone.group) === -1)
 				groups.push(stone.group)
 		}
 
-		for (var row = 0; row < size; row++) {
-			for (var col = 0; col < size; col++) {
+		for (let row = 0; row < size; row++) {
+			for (let col = 0; col < size; col++) {
 				if (getStone(row, col).type == EMPTY) {
-					var types = {};
-					var groups = []
+					let types = {};
+					let groups = []
 					addTypeGroup(row, col-1, types, groups);
 					addTypeGroup(row, col+1, types, groups);
 					addTypeGroup(row-1, col, types, groups);
@@ -429,136 +401,60 @@ function Game(size) {
 		}
 	}
 
-	function initializeBoard() {
-		for (var row = 0; row < size; row++) {
-			board.push([]);
-			for (var col = 0; col < size; col++) {
-				board[row][col] = {type: EMPTY,
-								   row: row,
-								   col: col,
-								   group: null};
-			}
-		}
-		calculateGroups();
-	}
-
-	initializeBoard();
-
 	return {
 		board: board,
 		playAt: playAt,
-		getStoneType: function(pos) { return getStone(pos.row, pos.col).type; },
+		turn: turn,
+		sweepBoard: sweepBoard,
+		recentlyRemoved: recentlyRemoved,
+		getStoneAtPos: function(pos) { return getStone(pos.row, pos.col) },
 		getTurn: function() { return turn; },
 	}
 }
 
-function CosumiBot(game) {
-	function ajaxPost(url, data, callback) {
-		var dataForm = new FormData();
-		for (var key in data) {
-			dataForm.append(key, data[key]);
-		}
-		var r = new XMLHttpRequest();
-		r.open('POST', url, true);
-		r.onreadystatechange = function() {
-			if (r.readyState == XMLHttpRequest.DONE ) {
-			   if (r.status == 200){
-				callback(JSON.parse(r.responseText));
-			   } else {
-				  alert('There was an error ' + r.status)
-			   }
-			}
-		}
-		r.send(data);
-	}
-
-	var nToA = "abcdefghijklmnopqrstuvwxyz"
-
-	var id = "";
-
-	ajaxPost("http://www.cosumi.net/play/id.cgi", {
-		m: game.size,
-		cm: 0,
-		c: "b",
-		f: "j",
-		dummy: (new Date).getTime(),
-	}, function (r) {
-		console.log(r);
-		if (r.error) {
-			alert("Failed to contact bot: " + r.error);
-		} else {
-			id = r.i;
-		}
-	});
-
-	function playAt(row, col) {
-		game.playAt(row, col);
-		game.lock();
-		ajaxPost("http://www.cosumi.net/play/move.cgi", {
-			m: nToA.charAt(col) + nToA.charAt(row),
-			r: "7",
-			cm: 0,
-			i: id,
-			dummy: (new Date).getTime(),
-		}, function(r) {
-			console.log(r);
-			var col = nToA.indexOf(r.m.charAt(0));
-			var row = nToA.indexOf(r.m.charAt(1));
-			game.unlock();
-			game.playAt(row, col);
-		});
-	}
-
-	return {
-		playAt: playAt,
-	}
-}
-
-function StupidBot(game) {
-	return {
-		playAt: function(pos) {
-			for (var i = 0; i < 100; i++) {
-				var row = Math.floor(Math.random() * game.board.length);
-				var col = Math.floor(Math.random() * game.board.length);
-				var play = game.playAt({row: row, col: col});
-				if (play) {
-					return play;
-				}
-			}
-			return null;
-		},
-	}
-}
-
-var size = 5;
-var canvas = document.getElementById("go-board");
+let size = 5;
+let canvas = document.getElementById("go-board");
 canvas.height = document.body.clientHeight;
 canvas.width = document.body.clientWidth;
-var game = Game(size);
-game.locked = false;
-var bot = StupidBot(game);
-var renderer = Renderer(size, canvas);
-var hovering = {row: -1, col: -1};
+let state = State(null, size, BLACK);
+let renderer = Renderer(size, canvas);
+let hovering = {row: -1, col: -1};
 
 canvas.onclick = function(event) {
-	if (game.locked) return;
-	var pos = renderer.screenToBoard(event.pageX, event.pageY);
-	var play = game.playAt(pos);
-	if (play) {
-		game.locked = true;
-		renderer.animatePlay(play.stone, play.removed, game.board, function() {
+	if (state.turn === WHITE) return;
+	let pos = renderer.screenToBoard(event.pageX, event.pageY);
+	let newState = state.playAt(pos);
+	if (newState) {
+		//renderer.animatePlay(state.turn, pos, newState.recentlyRemoved, newState.board);
+		//return
+		renderer.animatePlay(BLACK, pos, newState.recentlyRemoved, newState.board, function() {
+			state = newState
 			setTimeout(function() {
-			var botPlay = bot.playAt(pos);
-			if (botPlay) {
-				renderer.animatePlay(botPlay.stone, botPlay.removed, game.board, function() { game.locked = false });
-			} else {
-				alert("The bot gave up!");
-			}
-		}, 700 + Math.random()*200)});
+				let emptyPos = [];
+				for (let row = 0; row < size; row++) {
+					for (let col = 0; col < size; col++) {
+						let pos = {row: row, col: col};
+						if (state.getStoneAtPos(pos).type === EMPTY) {
+							emptyPos.push(pos);
+						}
+					}
+				}
+				while (emptyPos.length) {
+					let pos = emptyPos.splice(Math.floor(Math.random() * emptyPos.length), 1)[0];
+					let newState = state.playAt(pos);
+					if (newState) {
+						renderer.animatePlay(WHITE, pos, newState.recentlyRemoved, newState.board);
+						state = newState;
+						return
+					}
+				}
+				alert("The bot passes.");
+			}, 700 + Math.random()*200)
+		});
 	}
 };
 canvas.onmousemove = function(event) {
-	var pos = renderer.screenToBoard(event.pageX, event.pageY);
+	let pos = renderer.screenToBoard(event.pageX, event.pageY);
 	if (hovering.row != pos.row || hovering.col != pos.col) {
 		renderer.update();
 		hovering = pos;
@@ -567,9 +463,9 @@ canvas.onmousemove = function(event) {
 
 function update() {
 	renderer.update();
-	var hoveringType = game.getStoneType(hovering);
+	let hoveringType = state.getStoneAtPos(hovering).type;
 	if (hoveringType == EMPTY) {
-		renderer.drawGhost(game.getTurn(), hovering);
+		renderer.drawGhost(state.turn, hovering);
 	}
 	window.requestAnimationFrame(update);
 }
