@@ -16,6 +16,9 @@ let BLACK = "black";
 let WHITE = "white";
 let NOTHING = "nothing";
 
+let SUICIDE = "suicide";
+let KO = "ko";
+
 function Renderer(size, canvas) {
 	let stoneSizeRatio = 0.8 / 2;
 	let context = canvas.getContext("2d");
@@ -313,10 +316,12 @@ function State(baseBoard, size, turn, history) {
 		stone.type = turn;
 		clone.sweepBoard();
 		let suicide = clone.recentlyRemoved.indexOf(stone) != -1;
+		if (suicide) {
+			return SUICIDE;
+		}
 		let string = clone.asString();
-		if (history.indexOf(string) >= 0) console.log('forbidden by Ko rule')
-		if (suicide || history.indexOf(string) >= 0) {
-			return null;
+		if (history.indexOf(string) >= 0) {
+			return KO;
 		}
 		history.push(string);
 
@@ -442,7 +447,11 @@ canvas.onclick = function(event) {
 	if (state.turn === WHITE) return;
 	let pos = renderer.screenToBoard(event.pageX, event.pageY);
 	let newState = state.playAt(pos);
-	if (newState) {
+	if (newState === SUICIDE) {
+		alert("Cannot move into a space that will kill your own stone.");
+	} else if (newState === KO) {
+		alert("Forbid by KO rule: one may not play in such a way as to recreate the board position following one's previous move.");
+	} else if (newState) {
 		renderer.animatePlay(BLACK, pos, newState.recentlyRemoved, newState.board, function() {
 			state = newState;
 			setTimeout(function() {
