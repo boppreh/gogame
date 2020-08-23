@@ -467,7 +467,7 @@ canvas.onclick = function(event) {
 				while (emptyPos.length) {
 					let pos = emptyPos.splice(Math.floor(Math.random() * emptyPos.length), 1)[0];
 					let newState = state.playAt(pos);
-					if (newState) {
+					if (newState && newState != SUICIDE && newState != KO) {
 						renderer.animatePlay(WHITE, pos, newState.recentlyRemoved, newState.board);
 						state = newState;
 						return
