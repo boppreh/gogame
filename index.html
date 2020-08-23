@@ -427,6 +427,7 @@ function State(baseBoard, size, turn, history) {
 		asString: asString,
 		board: board,
 		playAt: playAt,
+		pass: function() { return State(board, size, turn === BLACK ? WHITE : BLACK, history); },
 		turn: turn,
 		sweepBoard: sweepBoard,
 		recentlyRemoved: recentlyRemoved,
@@ -474,6 +475,7 @@ canvas.onclick = function(event) {
 					}
 				}
 				alert("The bot passes.");
+				state = state.pass();
 			}, 700 + Math.random()*200)
 		});
 	}
