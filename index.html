@@ -24,7 +24,7 @@ function Renderer(size, canvas) {
 	let context = canvas.getContext("2d");
 	let minSide = Math.min(canvas.width, canvas.height);
 	let padding = 10;
-	let cellSize = (minSide - 2 * padding) / size;
+	let cellSize = Math.floor((minSide - 2 * padding) / size);
 
 	let animations = [];
 
@@ -54,6 +54,8 @@ function Renderer(size, canvas) {
 
 	function drawBoardBackground(context) {
 		context.save();
+		// Fix blurry lines: https://stackoverflow.com/a/8696641/252218
+		context.translate(0.5, 0.5);
 
 		context.fillStyle = "#E2C58B"
 		context.fillRect(0, 0, minSide, minSide);
@@ -67,9 +69,9 @@ function Renderer(size, canvas) {
 		context.beginPath();
 		let boardBackgroundStreaks = [];
 		for (let x = 0; x < minSide; ) {
-			x += Math.random() * minSide / 10;
+			x += Math.floor(Math.random() * minSide / 10);
 			context.moveTo(x, 0);
-			context.lineTo(x + (2 * Math.random() - 1) * 1 * minSide / 30, minSide);
+			context.lineTo(x + Math.floor((2 * Math.random() - 1) * 1 * minSide / 30), minSide);
 		}
 		context.stroke();
 
@@ -87,22 +89,58 @@ function Renderer(size, canvas) {
 		context.restore();
 	}
 	function drawBoardLines(context) {
+		let topRight = translateRowCol({row: 0, col: size-1}, true);
+		let start = topRight.y;
+		let end = topRight.x;
+
+		let lineWidth = Math.max(2, Math.floor(4 * cellSize / 100));
+
+		context.save();
+		context.globalAlpha = 1;
+		context.lineWidth = 1;
+		context.lineJoin = "square";
+		context.strokeStyle = "#FFFFFF";
+		context.translate(lineWidth/2, lineWidth/2);
+		context.beginPath();
+		context.moveTo(end, start);
+		context.lineTo(start, start);
+		context.lineTo(start, end);
+		context.lineTo(end, end);
+		context.lineTo(end, start);
+		context.closePath();
+
+		for (let i = 1; i < size-1; i++) {
+			context.moveTo(start, start + i * cellSize);
+			context.lineTo(end, start + i * cellSize);
+			context.moveTo(start + i * cellSize, start);
+			context.lineTo(start + i * cellSize, end);
+		}
+		context.stroke();
+		context.restore();
+
 		context.save();
 		context.globalAlpha = 0.8;
-		context.lineWidth = Math.max(2, 4 * cellSize / 100);
+		context.lineWidth = lineWidth;
+		context.lineJoin = "square";
 		context.strokeStyle = "#333333";
 		context.shadowColor = "rgba(10, 10, 10, 0.3)";
 		context.shadowBlur = 1;
 		context.shadowOffsetX = 1;
 		context.shadowOffsetY = 1;
-		let offset = padding + cellSize/2;
-		context.translate(offset, offset);
+
 		context.beginPath();
-		for (let i = 0; i < size; i++) {
-			context.moveTo(0, i * cellSize);
-			context.lineTo(minSide - offset * 2, i * cellSize);
-			context.moveTo(i * cellSize, 0);
-			context.lineTo(i * cellSize, minSide - offset * 2);
+		context.moveTo(end, start);
+		context.lineTo(start, start);
+		context.lineTo(start, end);
+		context.lineTo(end, end);
+		context.lineTo(end, start);
+		context.closePath();
+
+		for (let i = 1; i < size-1; i++) {
+			context.moveTo(start, start + i * cellSize);
+			context.lineTo(end, start + i * cellSize);
+			context.moveTo(start + i * cellSize, start);
+			context.lineTo(start + i * cellSize, end);
 		}
 		context.stroke();
 		context.restore();
@@ -216,8 +254,8 @@ function Renderer(size, canvas) {
 	drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
 
 	function drawBoard() {
-		context.fillStyle = '#FFFFFF'
-		context.fillRect(0, 0, canvas.width, canvas.height);
+		// Erase contents and reset canvas.
+		canvas.width = canvas.width;
 		context.drawImage(cachedBackgroundCanvas, 0, 0);
 		context.drawImage(stonesCanvas, 0, 0);
 	}
