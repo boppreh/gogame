@@ -22,16 +22,17 @@ let KO = "ko";
 function Renderer(size, canvas) {
 	let stoneSizeRatio = 0.8 / 2;
 	let context = canvas.getContext("2d");
-	let minSide = Math.min(canvas.width, canvas.height);
 	let padding = 10;
+	let minSide = Math.min(canvas.width, canvas.height * (size / (size+1)) - padding);
 	let cellSize = Math.floor((minSide - 2 * padding) / size);
 	let territoryScale = 0.3;
+	let scoringArea = padding + cellSize;
 
 	let animations = [];
 
 	let cachedBackgroundCanvas = document.createElement("canvas");
 	cachedBackgroundCanvas.width = minSide;
-	cachedBackgroundCanvas.height = minSide;
+	cachedBackgroundCanvas.height = minSide + scoringArea;
 	let cachedBlackStoneCanvas = document.createElement("canvas");
 	cachedBlackStoneCanvas.width = cellSize;
 	cachedBlackStoneCanvas.height = cellSize;
@@ -47,7 +48,12 @@ function Renderer(size, canvas) {
 
 	let stonesCanvas = document.createElement("canvas");
 	stonesCanvas.width = minSide;
-	stonesCanvas.height = minSide;
+	stonesCanvas.height = minSide + scoringArea;
+
+	let topRight = translateRowCol({row: 0, col: size-1}, true);
+	let gridStart = topRight.y;
+	let gridEnd = topRight.x;
+	let lineWidth = Math.max(2, Math.floor(4 * cellSize / 100));
 
 	let stonesPos = {};
 	function getStonePos(stone) {
@@ -65,7 +71,7 @@ function Renderer(size, canvas) {
 		context.translate(0.5, 0.5);
 
 		context.fillStyle = "#E2C58B"
-		context.fillRect(0, 0, minSide, minSide);
+		context.fillRect(0, 0, minSide, minSide + scoringArea);
 
 		context.strokeStyle = "rgba(180, 139, 89, 0.4)";
 		context.lineWidth = 2;
@@ -78,7 +84,7 @@ function Renderer(size, canvas) {
 		for (let x = 0; x < minSide; ) {
 			x += Math.floor(Math.random() * minSide / 10);
 			context.moveTo(x, 0);
-			context.lineTo(x + Math.floor((2 * Math.random() - 1) * 1 * minSide / 30), minSide);
+			context.lineTo(x + Math.floor((2 * Math.random() - 1) * 1 * minSide / 30), minSide + scoringArea);
 		}
 		context.stroke();
 
@@ -91,17 +97,16 @@ function Renderer(size, canvas) {
 		gradient.addColorStop(0.70, "rgba(255, 255, 255, 0.01)");
 		gradient.addColorStop(1.00, "rgba(0, 0, 0, 0.1)");
 		context.fillStyle = gradient;
-		context.fillRect(0, 0, minSide, minSide);
+		context.fillRect(0, 0, minSide, minSide + scoringArea);
+
+		drawOneStone(context, BLACK, translateRowCol({row: size, col: 1}, true), 1, false);
+		drawOneStone(context, BLACK, translateRowCol({row: size+0.3, col: 1-0.3}, true), 1, true);
+		drawOneStone(context, WHITE, translateRowCol({row: size, col: size-2}, true), 1, false);
+		drawOneStone(context, WHITE, translateRowCol({row: size+0.3, col: size-2-0.3}, true), 1, true);
 
 		context.restore();
 	}
 	function drawBoardLines(context) {
-		let topRight = translateRowCol({row: 0, col: size-1}, true);
-		let start = topRight.y;
-		let end = topRight.x;
-
-		let lineWidth = Math.max(2, Math.floor(4 * cellSize / 100));
-
 		context.save();
 		context.globalAlpha = 1;
 		context.lineWidth = 1;
@@ -109,18 +114,18 @@ function Renderer(size, canvas) {
 		context.strokeStyle = "#FFFFFF";
 		context.translate(lineWidth/2, lineWidth/2);
 		context.beginPath();
-		context.moveTo(end, start);
-		context.lineTo(start, start);
-		context.lineTo(start, end);
-		context.lineTo(end, end);
-		context.lineTo(end, start);
+		context.moveTo(gridEnd, gridStart);
+		context.lineTo(gridStart, gridStart);
+		context.lineTo(gridStart, gridEnd);
+		context.lineTo(gridEnd, gridEnd);
+		context.lineTo(gridEnd, gridStart);
 		context.closePath();
 
 		for (let i = 1; i < size-1; i++) {
-			context.moveTo(start, start + i * cellSize);
-			context.lineTo(end, start + i * cellSize);
-			context.moveTo(start + i * cellSize, start);
-			context.lineTo(start + i * cellSize, end);
+			context.moveTo(gridStart, gridStart + i * cellSize);
+			context.lineTo(gridEnd, gridStart + i * cellSize);
+			context.moveTo(gridStart + i * cellSize, gridStart);
+			context.lineTo(gridStart + i * cellSize, gridEnd);
 		}
 		context.stroke();
 		context.restore();
@@ -136,18 +141,18 @@ function Renderer(size, canvas) {
 		context.shadowOffsetY = 1;
 
 		context.beginPath();
-		context.moveTo(end, start);
-		context.lineTo(start, start);
-		context.lineTo(start, end);
-		context.lineTo(end, end);
-		context.lineTo(end, start);
+		context.moveTo(gridEnd, gridStart);
+		context.lineTo(gridStart, gridStart);
+		context.lineTo(gridStart, gridEnd);
+		context.lineTo(gridEnd, gridEnd);
+		context.lineTo(gridEnd, gridStart);
 		context.closePath();
 
 		for (let i = 1; i < size-1; i++) {
-			context.moveTo(start, start + i * cellSize);
-			context.lineTo(end, start + i * cellSize);
-			context.moveTo(start + i * cellSize, start);
-			context.lineTo(start + i * cellSize, end);
+			context.moveTo(gridStart, gridStart + i * cellSize);
+			context.lineTo(gridEnd, gridStart + i * cellSize);
+			context.moveTo(gridStart + i * cellSize, gridStart);
+			context.lineTo(gridStart + i * cellSize, gridEnd);
 		}
 		context.stroke();
 		context.restore();
@@ -192,7 +197,6 @@ function Renderer(size, canvas) {
 	}
 	function drawBoardStones(context, board) {
 		context.save();
-		context.clearRect(0, 0, minSide, minSide);
 
 		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
 		context.textAlign = "center";
@@ -289,7 +293,26 @@ function Renderer(size, canvas) {
 		}
 	}
 
-	function animatePlay(type, boardPos, removed, board, callback) {
+	function drawScore(context, scoreByType) {
+		context.save();
+		context.font = "bold " + Math.round(cellSize / 3) + "px Arial";
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+		context.shadowBlur = 1;
+		context.shadowOffsetX = 1;
+		context.shadowOffsetY = 1;
+		context.fillStyle = "#BBBBBB";
+		let blackPos = translateRowCol({row: size, col: 1}, true)
+		context.fillText(scoreByType[BLACK], blackPos.x, blackPos.y);
+		context.fillStyle = "#444444";
+		let whitePos = translateRowCol({row: size, col: size - 2}, true)
+		context.fillText(scoreByType[WHITE], whitePos.x, whitePos.y);
+		context.restore();
+	}
+
+	function animatePlay(type, boardPos, state, callback) {
+		let board = state.board;
+		let removed = state.recentlyRemoved;
 		let step = 0;
 		let direction = type == WHITE ? -1 : 1;
 		animations.push(function() {
@@ -305,7 +328,9 @@ function Renderer(size, canvas) {
 				for (let removedStone of removed) {
 					animateRemoval(removedStone);
 				}
+				stonesCanvas.width = stonesCanvas.width;
 				drawBoardStones(stonesCanvas.getContext("2d"), board);
+				drawScore(stonesCanvas.getContext("2d"), state.scoreByType);
 				callback && callback();
 				return false;
 			}
@@ -348,7 +373,7 @@ function State(baseBoard, size, turn, history) {
 	for (let row = 0; row < size; row++) {
 		board.push([]);
 		for (let col = 0; col < size; col++) {
-			board[row][col] = {type: baseBoard ? baseBoard[row][col].type : EMPTY, row: row, col: col, group: {nEyes: 0, nLiberties: 0, neighborsByColors: {white: {}, black: {}, empty: {}, nothing: {}}, members: []}};
+			board[row][col] = {type: baseBoard ? baseBoard[row][col].type : EMPTY, row: row, col: col, group: null};
 		}
 	}
 	if (baseBoard) {
@@ -359,7 +384,7 @@ function State(baseBoard, size, turn, history) {
 	}
 
 	let recentlyRemoved = []
-	let scoreByType = {white: 0, black: 0}
+	let scoreByType = {white: 0, black: 0};
 
 	function playAt(pos) {
 		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history);
@@ -405,6 +430,8 @@ function State(baseBoard, size, turn, history) {
 	}
 
 	function calculateGroups() {
+		scoreByType[WHITE] = 0;
+		scoreByType[BLACK] = 0;
 		let groups = [];
 		let visited = {};
 		function followGroup(stone, group, baseType) {
@@ -427,6 +454,7 @@ function State(baseBoard, size, turn, history) {
 				let pos = [row, col];
 				if (visited[pos]) continue;
 				let stone = getStone(row, col);
+				stone.group = {members: [], nEyes: 0, nLiberties: 0, neighborsByColors: {white: {}, black: {}, empty: {}, nothing: {}}};
 				groups.push(stone.group);
 				followGroup(stone, stone.group, stone.type);
 			}
@@ -452,7 +480,6 @@ function State(baseBoard, size, turn, history) {
 			group.nLiberties = Object.keys(group.neighborsByColors[EMPTY]).length;
 			group.nEyes = Object.values(group.neighborsByColors[EMPTY]).filter(function(emptyStone) { return emptyStone.group.members.length === 1 && emptyStone.group.territory == type; }).length;
 		}
-		console.log(groups)
 	}
 
 	function removeLockedGroups(type) {
@@ -506,7 +533,7 @@ canvas.onclick = function(event) {
 	} else if (newState === KO) {
 		alert("Forbid by KO rule: one may not play in such a way as to recreate the board position following one's previous move.");
 	} else if (newState) {
-		renderer.animatePlay(BLACK, pos, newState.recentlyRemoved, newState.board, function() {
+		renderer.animatePlay(BLACK, pos, newState, function() {
 			state = newState;
 			setTimeout(function() {
 				let emptyPos = [];
@@ -522,7 +549,7 @@ canvas.onclick = function(event) {
 					let pos = emptyPos.splice(Math.floor(Math.random() * emptyPos.length), 1)[0];
 					let newState = state.playAt(pos);
 					if (newState && newState != SUICIDE && newState != KO) {
-						renderer.animatePlay(WHITE, pos, newState.recentlyRemoved, newState.board);
+						renderer.animatePlay(WHITE, pos, newState);
 						state = newState;
 						return
 					}
