@@ -6,7 +6,7 @@
 	</head>
 
 	<body>
-		<canvas id="go-board" width=700 height=700 />
+		<canvas id="go-board" width=700 height=700></canvas>
 
 		<script>
 "use strict";
@@ -243,8 +243,8 @@ function Renderer(size, canvas) {
 				if (stone.group.territory === EMPTY) continue;
 
 				if (stone.type == EMPTY) {
-					pos = translateRowCol(stone, true)
-;					drawOneStone(context, stone.group.territory, pos, 1, true);
+					pos = translateRowCol(stone, true);
+					drawOneStone(context, stone.group.territory, pos, 1, true);
 				} else {
 					pos = getStonePos(stone);
 					drawOneStone(context, stone.type, pos);
@@ -526,6 +526,47 @@ let state = State(null, size, BLACK);
 let renderer = Renderer(size, canvas);
 let hovering = {row: -1, col: -1};
 
+function botPlay() {
+	let emptyPos = [];
+	for (let row = 0; row < size; row++) {
+		for (let col = 0; col < size; col++) {
+			let pos = {row: row, col: col};
+			if (state.getStoneAtPos(pos).type === EMPTY) {
+				let tentativeState = state.playAt(pos, true);
+				if (tentativeState && tentativeState != SUICIDE && tentativeState != KO) {
+					emptyPos.push([pos, tentativeState]);
+				}
+			}
+		}
+	}
+	emptyPos.sort(function(playA, playB) {
+		let stateA = playA[1];
+		let killedA = stateA.recentlyRemoved.length;
+		let atariA = stateA.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
+		let scoreA = stateA.scoreByType[WHITE];
+
+		let stateB = playB[1];
+		let killedB = stateB.recentlyRemoved.length;
+		let atariB = stateB.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
+		let scoreB = stateA.scoreByType[WHITE];
+
+		if (killedA !== killedB) return killedA - killedB;
+		if (atariA !== atariB) return -(atariA - atariB);
+		if (scoreA !== scoreB) return scoreA - scoreB;
+		return Math.random() * 2 - 1;
+	});
+	if (emptyPos.length === 0) {
+		alert("The bot passes.");
+		state = state.pass();
+	} else {
+		let posPair = emptyPos.pop();
+		let pos = posPair[0];
+		let newState = state.playAt(pos);
+		renderer.animatePlay(WHITE, pos, newState);
+		state = newState;
+	}
+}
+
 canvas.onclick = function(event) {
 	if (state.turn === WHITE) return;
 	let pos = renderer.screenToBoard(event.pageX, event.pageY);
@@ -537,46 +578,7 @@ canvas.onclick = function(event) {
 	} else if (newState) {
 		renderer.animatePlay(BLACK, pos, newState, function() {
 			state = newState;
-			setTimeout(function() {
-				let emptyPos = [];
-				for (let row = 0; row < size; row++) {
-					for (let col = 0; col < size; col++) {
-						let pos = {row: row, col: col};
-						if (state.getStoneAtPos(pos).type === EMPTY) {
-							let tentativeState = state.playAt(pos, true);
-							if (tentativeState && tentativeState != SUICIDE && tentativeState != KO) {
-								emptyPos.push([pos, tentativeState]);
-							}
-						}
-					}
-				}
-				emptyPos.sort(function(playA, playB) {
-					let stateA = playA[1];
-					let killedA = stateA.recentlyRemoved.length;
-					let atariA = stateA.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
-					let scoreA = stateA.scoreByType[WHITE];
-
-					let stateB = playB[1];
-					let killedB = stateB.recentlyRemoved.length;
-					let atariB = stateB.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
-					let scoreB = stateA.scoreByType[WHITE];
-
-					if (killedA !== killedB) return killedA - killedB;
-					if (atariA !== atariB) return -(atariA - atariB);
-					if (scoreA !== scoreB) return scoreA - scoreB;
-					return Math.random() * 2 - 1;
-				});
-				if (emptyPos.length === 0) {
-					alert("The bot passes.");
-					state = state.pass();
-				} else {
-					let posPair = emptyPos.pop();
-					let pos = posPair[0];
-					let newState = state.playAt(pos);
-					renderer.animatePlay(WHITE, pos, newState);
-					state = newState;
-				}
-			}, 700 + Math.random()*200)
+			setTimeout(botPlay, 700 + Math.random()*200)
 		});
 	}
 };
@@ -599,5 +601,8 @@ function update() {
 window.requestAnimationFrame(update);
 
 		</script>
+
+		<button onclick="state = state.pass(); setTimeout(botPlay, 400);">Pass</button>
+		<button onclick="alert(state.scoreByType[BLACK] > state.scoreByType[WHITE] ? 'Congratulations, you won!' : 'The bot wins. Try again.'); window.location.reload(false);">End game</button>
 	</body>
 </html>
