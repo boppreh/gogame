@@ -25,6 +25,7 @@ function Renderer(size, canvas) {
 	let minSide = Math.min(canvas.width, canvas.height);
 	let padding = 10;
 	let cellSize = Math.floor((minSide - 2 * padding) / size);
+	let territoryScale = 0.3;
 
 	let animations = [];
 
@@ -37,6 +38,12 @@ function Renderer(size, canvas) {
 	let cachedWhiteStoneCanvas = document.createElement("canvas");
 	cachedWhiteStoneCanvas.width = cellSize;
 	cachedWhiteStoneCanvas.height = cellSize;
+	let cachedWhiteTerritoryCanvas = document.createElement("canvas");
+	cachedWhiteTerritoryCanvas.width = cellSize;
+	cachedWhiteTerritoryCanvas.height = cellSize;
+	let cachedBlackTerritoryCanvas = document.createElement("canvas");
+	cachedBlackTerritoryCanvas.width = cellSize;
+	cachedBlackTerritoryCanvas.height = cellSize;
 
 	let stonesCanvas = document.createElement("canvas");
 	stonesCanvas.width = minSide;
@@ -145,10 +152,11 @@ function Renderer(size, canvas) {
 		context.stroke();
 		context.restore();
 	}
-	function drawRawStone(context, type) {
+	function drawRawStone(context, type, scale) {
+		scale = scale || 1;
 		context.save();
 		context.translate(cellSize / 2, cellSize / 2);
-		context.scale(stoneSizeRatio, stoneSizeRatio);
+		context.scale(stoneSizeRatio * scale, stoneSizeRatio * scale);
 
 		context.lineWidth = 1;
 		context.shadowColor = "rgba(30, 30, 30, 0.5)";
@@ -175,8 +183,8 @@ function Renderer(size, canvas) {
 
 		context.restore();
 	}
-	function drawOneStone(context, type, canvasPos, transparency) {
-		let cachedCanvas = type == WHITE ? cachedWhiteStoneCanvas : cachedBlackStoneCanvas;
+	function drawOneStone(context, type, canvasPos, transparency, asTerritory) {
+		let cachedCanvas = type == WHITE ? (asTerritory ? cachedWhiteTerritoryCanvas : cachedWhiteStoneCanvas) : (asTerritory ? cachedBlackTerritoryCanvas : cachedBlackStoneCanvas);
 		context.save()
 		context.globalAlpha = transparency || 1;
 		context.drawImage(cachedCanvas, canvasPos.x - cachedCanvas.width / 2, canvasPos.y - cachedCanvas.height / 2);
@@ -226,19 +234,24 @@ function Renderer(size, canvas) {
 		for (let row = 0; row < size; row++) {
 			for (let col = 0; col < size; col++) {
 				let stone = board[row][col];
-				let pos = getStonePos(stone);
-				if (stone.type == EMPTY) {
-					continue;
-				}
-				drawOneStone(context, stone.type, pos);
+				let pos;
+				let type;
+				if (stone.group.territory === EMPTY) continue;
 
-				if (stone.group.nLiberties == 1)
-					context.fillStyle = stone.type == BLACK ? "#BB4444" : "#A64545";
-				else if (stone.group.nEyes >= 2)
-					context.fillStyle = stone.type == BLACK ? "#D4AF37" : "#DAA520";
-				else
-					context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
-				context.fillText(stone.group.nLiberties, pos.x, pos.y);
+				if (stone.type == EMPTY) {
+					pos = translateRowCol(stone, true);
+					drawOneStone(context, stone.group.territory, pos, 1, true);
+				} else {
+					pos = getStonePos(stone);
+					drawOneStone(context, stone.type, pos);
+					if (stone.group.nLiberties == 1)
+						context.fillStyle = stone.type == BLACK ? "#BB4444" : "#A64545";
+					else if (stone.group.nEyes >= 2)
+						context.fillStyle = stone.type == BLACK ? "#D4AF37" : "#DAA520";
+					else
+						context.fillStyle = stone.type == BLACK ? "#BBBBBB" : "#444444";
+					context.fillText(stone.group.nLiberties, pos.x, pos.y);
+				}
 			}
 		}
 		context.restore();
@@ -251,8 +264,10 @@ function Renderer(size, canvas) {
 		return {x: x, y: y};
 	}
 
-	drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 0, 0);
-	drawRawStone(cachedBlackStoneCanvas.getContext("2d"), BLACK, 0, 0);
+	drawRawStone(cachedWhiteStoneCanvas.getContext("2d"), WHITE, 1);
+	drawRawStone(cachedBlackStoneCanvas.getContext("2d"), BLACK, 1);
+	drawRawStone(cachedWhiteTerritoryCanvas.getContext("2d"), WHITE, territoryScale);
+	drawRawStone(cachedBlackTerritoryCanvas.getContext("2d"), BLACK, territoryScale);
 	drawBoardBackground(cachedBackgroundCanvas.getContext("2d"));
 
 	function drawBoard() {
@@ -333,7 +348,7 @@ function State(baseBoard, size, turn, history) {
 	for (let row = 0; row < size; row++) {
 		board.push([]);
 		for (let col = 0; col < size; col++) {
-			board[row][col] = {type: baseBoard ? baseBoard[row][col].type : EMPTY, row: row, col: col, group: {nEyes: 0, nLiberties: 0, liberties: {}, members: []}};
+			board[row][col] = {type: baseBoard ? baseBoard[row][col].type : EMPTY, row: row, col: col, group: {nEyes: 0, nLiberties: 0, neighborsByColors: {white: {}, black: {}, empty: {}, nothing: {}}, members: []}};
 		}
 	}
 	if (baseBoard) {
@@ -344,6 +359,7 @@ function State(baseBoard, size, turn, history) {
 	}
 
 	let recentlyRemoved = []
+	let scoreByType = {white: 0, black: 0}
 
 	function playAt(pos) {
 		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history);
@@ -382,30 +398,28 @@ function State(baseBoard, size, turn, history) {
 		calculateGroups();
 		removeLockedGroups(turn);
 
-		calculateGroups();
+		if (recentlyRemoved.length) calculateGroups();
 		removeLockedGroups(turn == WHITE ? BLACK : WHITE);
 
-		calculateGroups()
-		calculateEyes();
+		if (recentlyRemoved.length) calculateGroups();
 	}
 
 	function calculateGroups() {
+		let groups = [];
 		let visited = {};
-		function followGroup(stone, baseStone) {
+		function followGroup(stone, group, baseType) {
 			let pos = [stone.row, stone.col];
-			if (stone.type === NOTHING || visited[pos]) return;
-
-			if (stone.type === baseStone.type) {
+			if (stone.type === baseType) {
+				if (visited[pos]) return;
 				visited[pos] = true;
-				stone.group = baseStone.group;
-				stone.group.members.push(pos);
-				followGroup(getStone(pos[0], pos[1]+1), baseStone);
-				followGroup(getStone(pos[0], pos[1]-1), baseStone);
-				followGroup(getStone(pos[0]+1, pos[1]), baseStone);
-				followGroup(getStone(pos[0]-1, pos[1]), baseStone);
-			} else if (stone.type === EMPTY && !baseStone.group.liberties[pos]) {
-				baseStone.group.liberties[pos] = true;
-				baseStone.group.nLiberties++;
+				stone.group = group;
+				stone.group.members.push(stone);
+				followGroup(getStone(pos[0], pos[1]+1), group, baseType);
+				followGroup(getStone(pos[0], pos[1]-1), group, baseType);
+				followGroup(getStone(pos[0]+1, pos[1]), group, baseType);
+				followGroup(getStone(pos[0]-1, pos[1]), group, baseType);
+			} else {
+				group.neighborsByColors[stone.type][pos] = stone;
 			}
 		}
 		for (let row = 0; row < size; row++) {
@@ -413,10 +427,32 @@ function State(baseBoard, size, turn, history) {
 				let pos = [row, col];
 				if (visited[pos]) continue;
 				let stone = getStone(row, col);
-				if (stone.type == EMPTY) continue;
-				followGroup(stone, stone);
+				groups.push(stone.group);
+				followGroup(stone, stone.group, stone.type);
 			}
 		}
+		for (let group of groups) {
+			let type = group.members[0].type;
+			if (type !== EMPTY) {
+				group.territory = type;
+			} else {
+				let nWhites = Object.values(group.neighborsByColors[WHITE]).length;
+				let nBlacks = Object.values(group.neighborsByColors[BLACK]).length;
+				if (nWhites === 0 && nBlacks)
+					group.territory = BLACK;
+				else if (nWhites && nBlacks === 0)
+					group.territory = WHITE;
+				else
+					group.territory = EMPTY;
+			}
+			scoreByType[group.territory] += group.members.length;
+		}
+		for (let group of groups) {
+			let type = group.members[0].type;
+			group.nLiberties = Object.keys(group.neighborsByColors[EMPTY]).length;
+			group.nEyes = Object.values(group.neighborsByColors[EMPTY]).filter(function(emptyStone) { return emptyStone.group.members.length === 1 && emptyStone.group.territory == type; }).length;
+		}
+		console.log(groups)
 	}
 
 	function removeLockedGroups(type) {
@@ -439,31 +475,8 @@ function State(baseBoard, size, turn, history) {
 		return board[row][col];
 	}
 
-	function calculateEyes() {
-		function addTypeGroup(row, col, types, groups) {
-			let stone = getStone(row, col);
-			types[stone.type] = 1;
-			if (stone.group && groups.indexOf(stone.group) === -1)
-				groups.push(stone.group)
-		}
-
-		for (let row = 0; row < size; row++) {
-			for (let col = 0; col < size; col++) {
-				if (getStone(row, col).type == EMPTY) {
-					let types = {};
-					let groups = []
-					addTypeGroup(row, col-1, types, groups);
-					addTypeGroup(row, col+1, types, groups);
-					addTypeGroup(row-1, col, types, groups);
-					addTypeGroup(row+1, col, types, groups);
-					if (types[EMPTY] || (types[WHITE] && types[BLACK])) continue;
-					if (groups.length === 1) groups[0].nEyes++;
-				}
-			}
-		}
-	}
-
 	return {
+		scoreByType: scoreByType,
 		asString: asString,
 		board: board,
 		playAt: playAt,
