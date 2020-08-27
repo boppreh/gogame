@@ -190,15 +190,20 @@ function Renderer(size, canvas) {
 		context.textAlign = "center";
 		context.textBaseline = "middle";
 
+		function connectTo(type, stonePos, neighborPos) {
+			context.beginPath();
+			context.strokeStyle = type == BLACK ? "#000000" : "#FFFFFF";
+			context.moveTo(stonePos.x, stonePos.y);
+			context.lineTo(neighborPos.x, neighborPos.y)
+			context.stroke();
+		}
+
 		context.save();
 		context.globalAlpha = 0.5;
 		context.lineWidth = Math.max(15, cellSize * 0.15);
-		context.strokeStyle = "#000000";
-		context.shadowColor = "rgba(10, 10, 10, 0.3)";
 		context.shadowBlur = 1;
 		context.shadowOffsetX = 1;
 		context.shadowOffsetY = 1;
-		context.beginPath();
 		for (let row = 0; row < size; row++) {
 			for (let col = 0; col < size; col++) {
 				let stone = board[row][col]
@@ -207,18 +212,15 @@ function Renderer(size, canvas) {
 
 				if (col > 0 && stone.type == board[row][col-1].type) {
 					let neighborPos = translateRowCol(board[row][col-1], true);
-					context.moveTo(stonePos.x, stonePos.y);
-					context.lineTo(neighborPos.x, neighborPos.y)
+					connectTo(stone.type, stonePos, neighborPos);
 				}
 				if (row > 0 && stone.type == board[row-1][col].type) {
 					let neighborPos = translateRowCol(board[row-1][col], true);
-					context.moveTo(stonePos.x, stonePos.y);
-					context.lineTo(neighborPos.x, neighborPos.y)
+					connectTo(stone.type, stonePos, neighborPos);
 				}
 
 			}
 		}
-		context.stroke();
 		context.restore();
 
 		for (let row = 0; row < size; row++) {
