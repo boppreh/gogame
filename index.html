@@ -243,8 +243,8 @@ function Renderer(size, canvas) {
 				if (stone.group.territory === EMPTY) continue;
 
 				if (stone.type == EMPTY) {
-					pos = translateRowCol(stone, true);
-					drawOneStone(context, stone.group.territory, pos, 1, true);
+					pos = translateRowCol(stone, true)
+;					drawOneStone(context, stone.group.territory, pos, 1, true);
 				} else {
 					pos = getStonePos(stone);
 					drawOneStone(context, stone.type, pos);
@@ -385,8 +385,9 @@ function State(baseBoard, size, turn, history) {
 
 	let recentlyRemoved = []
 	let scoreByType = {white: 0, black: 0};
+	let groups = [];
 
-	function playAt(pos) {
+	function playAt(pos, tentative) {
 		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history);
 
 		let stone = clone.getStoneAtPos(pos);
@@ -404,7 +405,8 @@ function State(baseBoard, size, turn, history) {
 		if (history.indexOf(string) >= 0) {
 			return KO;
 		}
-		history.push(string);
+		if (!tentative)
+			history.push(string);
 
 		return clone
 	}
@@ -432,7 +434,7 @@ function State(baseBoard, size, turn, history) {
 	function calculateGroups() {
 		scoreByType[WHITE] = 0;
 		scoreByType[BLACK] = 0;
-		let groups = [];
+		groups.length = 0;
 		let visited = {};
 		function followGroup(stone, group, baseType) {
 			let pos = [stone.row, stone.col];
@@ -454,15 +456,14 @@ function State(baseBoard, size, turn, history) {
 				let pos = [row, col];
 				if (visited[pos]) continue;
 				let stone = getStone(row, col);
-				stone.group = {members: [], nEyes: 0, nLiberties: 0, neighborsByColors: {white: {}, black: {}, empty: {}, nothing: {}}};
+				stone.group = {type: stone.type, members: [], nEyes: 0, nLiberties: 0, neighborsByColors: {white: {}, black: {}, empty: {}, nothing: {}}};
 				groups.push(stone.group);
 				followGroup(stone, stone.group, stone.type);
 			}
 		}
 		for (let group of groups) {
-			let type = group.members[0].type;
-			if (type !== EMPTY) {
-				group.territory = type;
+			if (group.type !== EMPTY) {
+				group.territory = group.type;
 			} else {
 				let nWhites = Object.values(group.neighborsByColors[WHITE]).length;
 				let nBlacks = Object.values(group.neighborsByColors[BLACK]).length;
@@ -503,6 +504,7 @@ function State(baseBoard, size, turn, history) {
 	}
 
 	return {
+		groups: groups,
 		scoreByType: scoreByType,
 		asString: asString,
 		board: board,
@@ -541,21 +543,39 @@ canvas.onclick = function(event) {
 					for (let col = 0; col < size; col++) {
 						let pos = {row: row, col: col};
 						if (state.getStoneAtPos(pos).type === EMPTY) {
-							emptyPos.push(pos);
+							let tentativeState = state.playAt(pos, true);
+							if (tentativeState && tentativeState != SUICIDE && tentativeState != KO) {
+								emptyPos.push([pos, tentativeState]);
+							}
 						}
 					}
 				}
-				while (emptyPos.length) {
-					let pos = emptyPos.splice(Math.floor(Math.random() * emptyPos.length), 1)[0];
+				emptyPos.sort(function(playA, playB) {
+					let stateA = playA[1];
+					let killedA = stateA.recentlyRemoved.length;
+					let atariA = stateA.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
+					let scoreA = stateA.scoreByType[WHITE];
+
+					let stateB = playB[1];
+					let killedB = stateB.recentlyRemoved.length;
+					let atariB = stateB.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
+					let scoreB = stateA.scoreByType[WHITE];
+
+					if (killedA !== killedB) return killedA - killedB;
+					if (atariA !== atariB) return -(atariA - atariB);
+					if (scoreA !== scoreB) return scoreA - scoreB;
+					return Math.random() * 2 - 1;
+				});
+				if (emptyPos.length === 0) {
+					alert("The bot passes.");
+					state = state.pass();
+				} else {
+					let posPair = emptyPos.pop();
+					let pos = posPair[0];
 					let newState = state.playAt(pos);
-					if (newState && newState != SUICIDE && newState != KO) {
-						renderer.animatePlay(WHITE, pos, newState);
-						state = newState;
-						return
-					}
+					renderer.animatePlay(WHITE, pos, newState);
+					state = newState;
 				}
-				alert("The bot passes.");
-				state = state.pass();
 			}, 700 + Math.random()*200)
 		});
 	}
