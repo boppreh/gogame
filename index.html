@@ -366,7 +366,7 @@ function Renderer(size, canvas) {
 	}
 }
 
-function State(baseBoard, size, turn, history) {
+function State(baseBoard, size, turn, history, lastMove) {
 	history = history || []
 
 	let board = [];
@@ -388,7 +388,7 @@ function State(baseBoard, size, turn, history) {
 	let groups = [];
 
 	function playAt(pos, tentative) {
-		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history);
+		let clone = State(board, size, turn === BLACK ? WHITE : BLACK, history, pos);
 
 		let stone = clone.getStoneAtPos(pos);
 		if (stone.type != EMPTY) {
@@ -504,12 +504,13 @@ function State(baseBoard, size, turn, history) {
 	}
 
 	return {
+		lastMove: lastMove,
 		groups: groups,
 		scoreByType: scoreByType,
 		asString: asString,
 		board: board,
 		playAt: playAt,
-		pass: function() { let passedState = State(board, size, turn === BLACK ? WHITE : BLACK, history); passedState.sweepBoard(); return passedState; },
+		pass: function() { let passedState = State(board, size, turn === BLACK ? WHITE : BLACK, history, null); passedState.sweepBoard(); return passedState; },
 		turn: turn,
 		sweepBoard: sweepBoard,
 		recentlyRemoved: recentlyRemoved,
@@ -614,7 +615,6 @@ window.requestAnimationFrame(update);
 
 		</script>
 
-		<button onclick="state = state.pass(); setTimeout(botPlay, 400);">Pass</button>
-		<button onclick="alert(state.scoreByType[BLACK] > state.scoreByType[WHITE] ? 'Congratulations, you won!' : 'The bot wins. Try again.'); window.location.reload(false);">End game</button>
+		<button onclick="if (state.turn === WHITE) return; if (state.lastMove === null) { if (confirm(state.scoreByType[BLACK] > state.scoreByType[WHITE] ? 'Congratulations, you won! Restart?' : 'The bot wins. Try again?')) window.location.reload(false); } else { state = state.pass(); setTimeout(botPlay, 400); }">Pass</button>
 	</body>
 </html>
