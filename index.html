@@ -509,7 +509,7 @@ function State(baseBoard, size, turn, history) {
 		asString: asString,
 		board: board,
 		playAt: playAt,
-		pass: function() { return State(board, size, turn === BLACK ? WHITE : BLACK, history); },
+		pass: function() { let passedState = State(board, size, turn === BLACK ? WHITE : BLACK, history); passedState.sweepBoard(); return passedState; },
 		turn: turn,
 		sweepBoard: sweepBoard,
 		recentlyRemoved: recentlyRemoved,
@@ -539,6 +539,7 @@ function botPlay() {
 			}
 		}
 	}
+	emptyPos.push([null, state.pass()]) // To represent passing.
 	emptyPos.sort(function(playA, playB) {
 		let stateA = playA[1];
 		let killedA = stateA.recentlyRemoved.length;
@@ -550,21 +551,32 @@ function botPlay() {
 		let atariB = stateB.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
 		let scoreB = stateA.scoreByType[WHITE];
 
+		if (playA[0] === null || playB[0] === null) {
+			console.log('Evaluation:')
+			console.log(playA, playB);
+			console.log(killedA, killedB);
+			console.log(atariA, atariB);
+			console.log(scoreA, scoreB);
+		}
+
 		if (killedA !== killedB) return killedA - killedB;
 		if (atariA !== atariB) return -(atariA - atariB);
 		if (scoreA !== scoreB) return scoreA - scoreB;
+		if (playB[0] === null) return 1;
+		if (playA[0] === null) return -1;
 		return Math.random() * 2 - 1;
 	});
-	if (emptyPos.length === 0) {
+	console.log(emptyPos);
+	let posPair = emptyPos.pop();
+	let pos = posPair[0];
+	if (pos === null) {
 		alert("The bot passes.");
 		state = state.pass();
 	} else {
-		let posPair = emptyPos.pop();
-		let pos = posPair[0];
 		let newState = state.playAt(pos);
 		renderer.animatePlay(WHITE, pos, newState);
 		state = newState;
-	}
+	}	
 }
 
 canvas.onclick = function(event) {
