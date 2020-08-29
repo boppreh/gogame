@@ -545,7 +545,6 @@ function botPlay() {
 		let stateA = playA[1];
 		let killedA = stateA.recentlyRemoved.length;
 		let eyesA = stateA.groups.filter(g => g.type === WHITE).reduce((a, g) => a+g.nEyes, 0);
-		console.log(stateA.groups)
 		let atariA = stateA.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
 		let scoreA = stateA.scoreByType[WHITE];
 
@@ -563,7 +562,6 @@ function botPlay() {
 		if (playA[0] === null) return -1;
 		return Math.random() * 2 - 1;
 	});
-	console.log(emptyPos);
 	let posPair = emptyPos.pop();
 	let pos = posPair[0];
 	if (pos === null) {
