@@ -544,24 +544,20 @@ function botPlay() {
 	emptyPos.sort(function(playA, playB) {
 		let stateA = playA[1];
 		let killedA = stateA.recentlyRemoved.length;
+		let eyesA = stateA.groups.filter(g => g.type === WHITE).reduce((a, g) => a+g.nEyes, 0);
+		console.log(stateA.groups)
 		let atariA = stateA.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
 		let scoreA = stateA.scoreByType[WHITE];
 
 		let stateB = playB[1];
 		let killedB = stateB.recentlyRemoved.length;
+		let eyesB = stateB.groups.filter(g => g.type === WHITE).reduce((a, g) => a+g.nEyes, 0);
 		let atariB = stateB.groups.filter(g => g.nLiberties === 1 && g.type === WHITE).length;
 		let scoreB = stateA.scoreByType[WHITE];
 
-		if (playA[0] === null || playB[0] === null) {
-			console.log('Evaluation:')
-			console.log(playA, playB);
-			console.log(killedA, killedB);
-			console.log(atariA, atariB);
-			console.log(scoreA, scoreB);
-		}
-
 		if (killedA !== killedB) return killedA - killedB;
 		if (atariA !== atariB) return -(atariA - atariB);
+		if (eyesA !== eyesB) return eyesA - eyesB;
 		if (scoreA !== scoreB) return scoreA - scoreB;
 		if (playB[0] === null) return 1;
 		if (playA[0] === null) return -1;
