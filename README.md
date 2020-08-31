@@ -4,4 +4,4 @@ Self-contained HTML5 version of the Go board game. Customizable sizes and beginn
 
 Does not currently include a bot, but suggestions welcome!
 
-![](https://i.imgur.com/OgbgA9J.png)
+![](https://i.imgur.com/d6pAVcv.png)
