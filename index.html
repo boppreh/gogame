@@ -519,7 +519,9 @@ function State(baseBoard, size, turn, history, lastMove) {
 	}
 }
 
-let size = 5;
+const urlParams = new URLSearchParams(window.location.search);
+
+let size = +urlParams.get('size') || 5;
 let canvas = document.getElementById("go-board");
 canvas.height = document.body.clientHeight;
 canvas.width = document.body.clientWidth;
